@@ -3,21 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labs 4 & 5: Interactive Data Visualization with D3.js</title>
+    <title>Final Project</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container"> <!-- Centers content and sets max width -->
-        <h1>Labs 4 & 5: Interactive Data Visualization with D3.js</h1>
-
-        <div id="controls">
-            <div id="slider"></div>
-            X: <select id="xVariable" class="variable"></select>
-            Y: <select id="yVariable" class="variable"></select>
-            size: <select id="sizeVariable" class="variable"></select>
+        <div class="header-container">
+            <h1>Final Project</h1>
+            <p id="header-subheader">
+                Description bblah blaha blah
+            </p>
         </div>
 
-        <div id="vis"></div> <!--  Will hold our visualization (SVG) -->
+    <div class="container"> <!-- Centers content and sets max width -->
+
+        <div class="sub-container">
+            <h2>Section 1 header</h2>
+            <p class="subheader">
+                Section 1 subheader
+            </p>
+            <div id="map-vis"></div> <!--  Will hold map vis  -->
+            <p class="caption">
+                Section 1 caption
+            </p>
+        </div>
+
+        <div class="sub-container">
+            <h2>Section 2 header</h2>
+            <p class="subheader">
+                Section 2 subheader
+            </p>
+            <div id="reddit-vis"></div> <!--  Will hold reddit vis  -->
+            <p class="caption">
+                Section 2 caption
+            </p>
+        </div>
+
+        <div class="sub-container">
+            <h2>Section 3 header</h2>
+            <p class="subheader">
+                Section 3 subheader
+            </p>
+            <div id="story-vis"></div> <!--  Will hold story vis  -->
+            <button type="button" id="story-btn">Click me</button>
+            <p class="caption">
+                Section 3 caption
+            </p>
+        </div>
 
         <div id="tooltip" style="display:none"></div> 
 
@@ -25,7 +56,7 @@
     
     <!-- Load D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://unpkg.com/d3-simple-slider"></script>
+    <script src="https://unpkg.com/d3-simple-slider"></script>
     <script type='module' src="js/script.js"></script>
     
 </body>

@@ -10,9 +10,9 @@ const continents = ['Africa', 'Asia', 'Oceania', 'Americas', 'Europe']
 const colorScale = d3.scaleOrdinal(continents, d3.schemeSet2); // d3.schemeSet2 is a set of predefined colors.
 
 //make margins
-const margin = {top: 40, right: 40, bottom: 40, left: 60};
-const width = 1000 - margin.left - margin.right;
-const height = 600 - margin.top - margin.bottom;
+const margin = {top: 40, right: 40, bottom: 60, left: 60};
+const width = 950 - margin.left - margin.right;
+const height = 500 - margin.top - margin.bottom;
 
 
 //load data after page is loaded
@@ -137,7 +137,7 @@ function updateAxes(){
   // Create x scale
 xScale = d3.scaleLinear()
     .domain([0, d3.max(allData, d => d[xVar])])
-    .range([0, width]);
+    .range([0, width - 120]);
 const xAxis = d3.axisBottom(xScale)
 
 svg.append("g")
@@ -162,7 +162,7 @@ sizeScale = d3.scaleSqrt()
 
     // X-axis label
 svg.append("text")
-    .attr("x", width / 2)
+    .attr("x", ((width ) / 2) - 80)
     .attr("y", height + margin.bottom - 20)
     .attr("text-anchor", "middle")
     .text(xVar) // Displays the current x-axis variable
@@ -172,7 +172,7 @@ svg.append("text")
 svg.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
-    .attr("y", -margin.left + 40)
+    .attr("y", margin.left - 90)
     .attr("text-anchor", "middle")
     .text(yVar) // Displays the current y-axis variable
     .attr('class', 'labels')
@@ -261,17 +261,68 @@ function addLegend(){
         .style("fill", d => colorScale(d))  // Match text color to the square
         .text(d => d) // The actual continent name
         .attr("text-anchor", "left")
-        .style('font-size', '13px')
 
 }
 
 window.addEventListener('load', init);
 
 // Create SVG
-const svg = d3.select('#vis')
+const svg = d3.select('#map-vis')
     .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
+
+d3.select("#story-btn")
+    .on("click", function () {
+        d3.select("#story-btn").remove();
+        createSVG1();
+    }
+);
+
+function createSVG1() {
+
+    const newSvg = d3.select("#story-vis")
+        .append("svg")  
+        .attr("width", width)
+        .attr("height", height)
+
+    const newButton = d3.select("#story-vis")
+        .append("button")
+        .text("Button from SVG1")
+
+    newButton.on("click", function () {
+        d3.select(this).attr("disabled", true);
+        createSVG2()
+    });
+        
+}
+
+function createSVG2() {
+
+    const newSvg = d3.select("#story-vis")
+        .append("svg")  
+        .attr("width", width)
+        .attr("height", height)
+
+    const newButton = d3.select("#story-vis")
+        .append("button")
+        .text("Button from SVG2")
+
+    newButton.on("click", function () {
+        d3.select(this).attr("disabled", true);
+        createSVG3()
+    });
+        
+}
+
+function createSVG3() {
+
+    const newSvg = d3.select("#story-vis")
+        .append("svg")   
+        .attr("width", width)
+        .attr("height", height)
+
+}
