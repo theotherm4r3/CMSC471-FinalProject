@@ -81,6 +81,17 @@ svg {
     display: block; 
     margin: 0 auto;
     margin-bottom: 20px;
+    margin-top: 20px;
     border-radius: 7px;
     background-color: var(--secondary-color);
+}
+
+#year-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    width: fit-content;
+    padding: 8px 12px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
 }

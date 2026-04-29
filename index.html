@@ -17,13 +17,26 @@
     <div class="container"> <!-- Centers content and sets max width -->
 
         <div class="sub-container">
-            <h2>Section 1 header</h2>
+            <h2>Depression affects 10-35% of the US population. </h2>
             <p class="subheader">
-                Section 1 subheader
+                Crude prevalence of depression in adults (>18 years) by county. 
             </p>
+            <div id="year-controls">
+            <label>
+                <input type="radio" name="year" value="2020" checked> 2020
+            </label>
+
+            <label>
+                <input type="radio" name="year" value="2021"> 2021
+            </label>
+
+            <label>
+                <input type="radio" name="year" value="2023"> 2023
+            </label>
+            </div>
             <div id="map-vis"></div> <!--  Will hold map vis  -->
             <p class="caption">
-                Section 1 caption
+                Data from the <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>. 
             </p>
         </div>
 
@@ -58,6 +71,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider"></script>
     <script type='module' src="js/script.js"></script>
-    
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+
 </body>
 </html>
