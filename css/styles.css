@@ -9,7 +9,7 @@
 
 /* Reset default styles */
 * {
-    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif; 
+    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
     max-width: 90%;
     margin: 0px auto;
     line-height: 1.8;
@@ -40,17 +40,17 @@ p {
 
 /* our styles */
 h1{
-	font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif; 
+	font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
     margin-bottom: 1rem;
     font-size: 40px;
 }
 
 h2{
-	font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif; 
+	font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
 }
 
 p{
-    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif; 
+    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
     margin-bottom: 1rem;
     margin-top: 1rem;
     font-size: 20px;
@@ -66,6 +66,7 @@ p{
 }
 
 .sub-container{
+    max-width: 2000px;
     outline: 1px solid var(--outline);
     padding-top: 1.5rem;
     padding-bottom: 1.5rem;
@@ -78,7 +79,8 @@ p{
 
 /* For svg border */
 svg {
-    display: block; 
+    display: block;
+    max-width: 100%;
     margin: 0 auto;
     margin-bottom: 20px;
     margin-top: 20px;
