@@ -49,6 +49,73 @@ h2{
 	font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
 }
 
+.vis-subheading {
+    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    max-width: 100%;
+}
+
+.story-chapter .subheader a {
+    color: var(--primary-color);
+}
+
+.story-beat-intro {
+    margin: 1.25rem 0 0.5rem;
+}
+
+.story-narrative {
+    font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--text-dark);
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.story-bridge {
+    margin: 2rem auto 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--outline);
+    border-radius: 8px;
+    background: #f8fbff;
+    max-width: 52rem;
+}
+
+.story-bridge .story-narrative {
+    margin-bottom: 1rem;
+}
+
+.story-hidden {
+    display: none !important;
+}
+
+.story-continue-btn {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border: none;
+    border-radius: 6px;
+    padding: 0.65rem 1.25rem;
+    font-size: 1rem;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+}
+
+.story-continue-btn:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.story-continue-btn:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
 p{
     font-family: Avant Garde,Avantgarde,Century Gothic,CenturyGothic,AppleGothic,sans-serif;
     margin-bottom: 1rem;

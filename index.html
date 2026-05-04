@@ -54,16 +54,33 @@
             </p>
         </div>
 
-        <div class="sub-container">
-            <h2>Section 3 header</h2>
+        <div class="sub-container story-chapter">
+            <h2>Small signals, big patterns</h2>
             <p class="subheader">
-                Section 3 subheader
+                This section presents a structured analysis approach: initial demographic comparison, risk assessment calculation, followed by population-level examination. The analysis focuses on depression symptom burden using PHQ-based scoring methodology from NHANES data, providing quantitative insights into mental health patterns.
             </p>
-            <div id="story-vis"></div> <!--  Will hold story vis  -->
-            <button type="button" id="story-btn">Click me</button>
+            <div class="story-beat story-beat-intro">
+                <p class="story-narrative">
+                    This analysis examines gender-based differences in depression screening outcomes from the NHANES dataset. The study focuses on respondents who completed identical depression assessment items, investigating whether demographic patterns emerge when controlling for other variables. The research question addresses whether systematic differences exist between population groups despite similar screening protocols.
+                </p>
+            </div>
+            <div id="story-vis"></div>
             <p class="caption">
-                Section 3 caption
+                Demographic Analysis: Mean depression risk scores among respondents with valid assessments, stratified by self-reported gender. Analysis conducted on unweighted sample; results are not representative of national estimates.
             </p>
+            <div id="story-bridge" class="story-bridge story-hidden" aria-live="polite">
+                <p class="story-narrative">
+                    Following the demographic analysis, the investigation expands to examine age-related patterns. The next analysis segment evaluates how depression burden varies across different life stages within the same NHANES dataset, providing insights into age-stratified mental health outcomes.
+                </p>
+                <button type="button" id="story-continue-age" class="story-continue-btn">Continue to age group analysis</button>
+            </div>
+            <div id="story-age-section" class="story-age-section story-hidden">
+                <h3 class="vis-subheading">Age-Stratified Analysis: Depression Burden by Life Stage</h3>
+                <div id="story-age-vis"></div>
+                <p class="caption">
+                    Analysis of respondents aged 18+ with valid depression risk assessments, categorized into age bands (years). Utilizes identical scoring methodology as demographic comparison.
+                </p>
+            </div>
         </div>
 
         <div id="tooltip" style="display:none"></div> 
