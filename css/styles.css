@@ -32,8 +32,8 @@ p {
     position: absolute; /* So we can move it with the cursor */
     padding: 10px;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid #929292;
+    border-radius: 2px;
     pointer-events: none; /* Prevent tooltip from interfering with mouse events */
     font-size: 12px;
 }
@@ -96,4 +96,88 @@ svg {
     padding: 8px 12px;
     border: 1px solid var(--outline);
     border-radius: 6px;
+}
+
+#reddit-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: 100%;
+    margin: 0;
+    font-size: 10px;
+}
+
+#subreddit-controls {
+    max-width: 60%;
+    flex: 150px 0 0;
+    width: 230px;
+    max-width: 150px;
+    margin: 0px 20 0 0;
+    padding: 12px;
+    border: 1px solid var(--outline);
+    border-radius: 2px;
+    font-size: 10px;
+}
+
+#reddit-vis {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+}
+
+.control-title {
+    max-width: 100%;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.subreddit-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px 12px;
+    max-width: 100%;
+}
+
+.subreddit-option {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    font-size: 14px;
+}
+
+.subreddit-option input {
+    flex: 0 0 auto;
+    margin: 4px 0 0 0;
+}
+
+.subreddit-option span {
+    display: inline-block;
+    margin: 0;
+    max-width: 100%;
+    padding: 2px 6px;
+    border-radius: 1px;
+    line-height: 1.3;
+}
+
+@media (max-width: 900px) {
+    #reddit-layout {
+        flex-direction: column;
+    }
+
+    #subreddit-controls {
+        flex-basis: auto;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .subreddit-options {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
 }

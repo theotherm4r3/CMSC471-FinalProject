@@ -10,34 +10,28 @@ let r_sentimentData = []
 
 const parseDate = d3.timeParse("%Y-%m-%d");
 let r_selectedDateRange = [parseDate("2020-01-01"), parseDate("2020-04-20")];
-const r_visibleSubreddits = [
+const r_allSubreddits = [
     "COVID19_support",
-    // "EDAnonymous",
     "addiction",
     "adhd",
-    // "alcoholism",
     "anxiety",
     "autism",
     "bipolarreddit",
     "bpd",
     "depression",
-    // "divorce",
-    // "fitness",
-    // "guns",
     "healthanxiety",
-    // "jokes",
-    // "legaladvice",
     "lonely",
-    "meditation",
     "mentalhealth",
-    // "parenting",
-    // "personalfinance",
     "ptsd",
-    // "relationships",
     "schizophrenia",
     "socialanxiety",
-    "suicidewatch",
-    // "teaching"
+    "suicidewatch"
+];
+const r_visibleSubreddits = [
+    "lonely",
+    "schizophrenia",
+    "socialanxiety",
+    "suicidewatch"
 ];
 
 const t = 1000; // 1000ms = 1 second
@@ -53,7 +47,7 @@ const cleanID = d => String(d).replace(/^0+/, "");
 
 
 const subColor = d3.scaleOrdinal()
-    .domain(r_visibleSubreddits)
+    .domain(r_allSubreddits)
     .range([
         "#cd9b9b",
         "#c1a68a",
@@ -86,6 +80,49 @@ function showTooltip(event, content) {
 function hideTooltip() {
     d3.select("#tooltip")
         .style("display", "none");
+}
+
+function createSubredditControls() {
+    const controls = d3.select("#subreddit-controls");
+
+    controls.selectAll("*").remove();
+
+    controls.append("div")
+        .attr("class", "control-title")
+        .text("Visible subreddits");
+
+    const options = controls.append("div")
+        .attr("class", "subreddit-options");
+
+    const labels = options.selectAll("label")
+        .data(r_allSubreddits)
+        .join("label")
+        .attr("class", "subreddit-option");
+
+    labels.append("input")
+        .attr("type", "checkbox")
+        .attr("name", "subreddit")
+        .attr("value", d => d)
+        .property("checked", d => r_visibleSubreddits.includes(d))
+        .on("change", function(event, subreddit) {
+            if (this.checked) {
+                if (!r_visibleSubreddits.includes(subreddit)) {
+                    r_visibleSubreddits.push(subreddit);
+                }
+            } else {
+                const index = r_visibleSubreddits.indexOf(subreddit);
+                if (index !== -1) {
+                    r_visibleSubreddits.splice(index, 1);
+                }
+            }
+
+            createRedVis();
+        });
+
+    labels.append("span")
+        .style("background-color", d => subColor(d))
+        .text(d => `r/${d}`)
+        .style("font-size", "10px");
 }
 
 //load data after page is loaded
@@ -184,6 +221,7 @@ function init(){
     .catch(error => console.error('Error loading sentiment data:', error));
 
     Promise.all([casesPromise_total, casesPromise_perday, eventsPromise, sentimentPromise]).then(() => {
+        createSubredditControls()
         createRedVis()
     });
 
