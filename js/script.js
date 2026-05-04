@@ -51,6 +51,47 @@ const svgHeight = height + margin.top + margin.bottom;
 
 const cleanID = d => String(d).replace(/^0+/, "");
 
+/** Parsed rows for Section 3 (NHANES depression story); loaded once. */
+let nhanesStoryRowsPromise = null;
+
+const NHANES_AGE_BANDS = [
+    { label: "18–29", lo: 18, hi: 30 },
+    { label: "30–44", lo: 30, hi: 45 },
+    { label: "45–59", lo: 45, hi: 60 },
+    { label: "60–80", lo: 60, hi: 81 },
+];
+
+function nhanesAgeBand(ageYears) {
+    if (!Number.isFinite(ageYears) || ageYears < 18) {
+        return null;
+    }
+    for (const b of NHANES_AGE_BANDS) {
+        if (ageYears >= b.lo && ageYears < b.hi) {
+            return b.label;
+        }
+    }
+    return null;
+}
+
+function loadNhanesForStory() {
+    if (nhanesStoryRowsPromise) {
+        return nhanesStoryRowsPromise;
+    }
+    nhanesStoryRowsPromise = d3.csv("./data/combined_NHANES.csv", d => {
+        const g = d.Gender === "" || d.Gender == null ? NaN : +d.Gender;
+        const risk = d.depression_risk_number === "" || d.depression_risk_number == null
+            ? NaN
+            : +d.depression_risk_number;
+        const ageYears = d.Age_in_years_at_screening === "" || d.Age_in_years_at_screening == null
+            ? NaN
+            : +d.Age_in_years_at_screening;
+        return { gender: g, ageYears, depressionRisk: risk };
+    }).then(rows => rows.filter(r =>
+        Number.isFinite(r.depressionRisk) && Number.isFinite(r.ageYears) && r.ageYears >= 18
+    ));
+    return nhanesStoryRowsPromise;
+}
+
 
 const subColor = d3.scaleOrdinal()
     .domain(r_visibleSubreddits)
@@ -187,6 +228,8 @@ function init(){
         createRedVis()
     });
 
+    createDepressionGenderVis();
+    setupDepressionStoryContinue();
 }
 
 
@@ -666,57 +709,414 @@ const redditsvg = d3.select('#reddit-vis')
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
-d3.select("#story-btn")
-    .on("click", function () {
-        d3.select("#story-btn").remove();
-        createSVG1();
+function createDepressionGenderVis() {
+    const sW = 1200;
+    const sH = 520;
+    const storyMargin = { top: 48, right: 48, bottom: 92, left: 48 };
+    const innerW = sW - storyMargin.left - storyMargin.right;
+    const innerH = sH - storyMargin.top - storyMargin.bottom;
+
+    const womenColor = "#4e79a7";
+    const menColor = "#59a14f";
+    const colW = innerW / 2;
+    const leftCx = colW * 0.5;
+    const rightCx = colW * 1.5;
+    const barW = 80;
+    const barRegionTop = 142;
+    const baseline = innerH - 54;
+    const barMaxPx = baseline - barRegionTop - 26;
+    const nLabelYOffset = 44;
+
+    const svg = d3.select("#story-vis")
+        .append("svg")
+        .attr("width", sW)
+        .attr("height", sH)
+        .attr("viewBox", `0 0 ${sW} ${sH}`)
+        .attr("role", "img")
+        .attr("aria-label", "Depression risk by gender comparison");
+
+    const root = svg.append("g")
+        .attr("transform", `translate(${storyMargin.left},${storyMargin.top})`);
+
+    root.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", -14)
+        .attr("text-anchor", "middle")
+        .style("font-size", "26px")
+        .style("font-weight", "600")
+        .style("fill", "#2a2a7b")
+        .text("Gender Comparison: Depression Burden by Demographic Group");
+
+    root.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", 14)
+        .attr("text-anchor", "middle")
+        .style("font-size", "17px")
+        .style("fill", "#444")
+        .text("Average PHQ-style item score (depression risk number) in the NHANES extract — calculate to reveal population averages");
+
+    function drawFigure(parent, cx, label, fill) {
+        const fg = parent.append("g").attr("transform", `translate(${cx},${barRegionTop - 118})`);
+        fg.append("circle")
+            .attr("r", 34)
+            .attr("cy", 40)
+            .attr("fill", fill)
+            .attr("opacity", 0.9);
+        fg.append("circle").attr("cx", -11).attr("cy", 34).attr("r", 3.5).attr("fill", "#fff");
+        fg.append("circle").attr("cx", 11).attr("cy", 34).attr("r", 3.5).attr("fill", "#fff");
+        fg.append("path")
+            .attr("d", "M -14 52 Q 0 60 14 52")
+            .attr("fill", "none")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 2)
+            .attr("stroke-linecap", "round");
+        fg.append("text")
+            .attr("y", 104)
+            .attr("text-anchor", "middle")
+            .style("font-size", "18px")
+            .style("font-weight", "600")
+            .style("fill", "#222")
+            .text(label);
+        return fg;
     }
-);
 
-function createSVG1() {
+    drawFigure(root, leftCx, "Female Respondents", womenColor);
+    drawFigure(root, rightCx, "Male Respondents", menColor);
 
-    const newSvg = d3.select("#story-vis")
-        .append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight)
-        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+    const promptG = root.append("g").attr("class", "story-risk-prompt");
+    promptG.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", barRegionTop + 30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "38px")
+        .style("fill", "#666")
+        .text("?");
 
-    const newButton = d3.select("#story-vis")
+    promptG.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", barRegionTop + 64)
+        .attr("text-anchor", "middle")
+        .style("font-size", "17px")
+        .style("fill", "#555")
+        .text("Which demographic group demonstrates higher average depression risk?");
+
+    const barsG = root.append("g")
+        .attr("class", "story-risk-bars")
+        .style("opacity", 0);
+
+    const noteG = root.append("g")
+        .attr("class", "story-risk-note")
+        .style("opacity", 0);
+
+    const fmt = d3.format(".2f");
+
+    const compareBtn = d3.select("#story-vis")
         .append("button")
-        .text("Button from SVG1")
+        .attr("type", "button")
+        .attr("class", "story-compare-btn")
+        .text("Calculate depression risk");
 
-    newButton.on("click", function () {
-        d3.select(this).attr("disabled", true);
-        createSVG2()
+    compareBtn.on("click", function () {
+        const btn = d3.select(this);
+        if (btn.attr("data-done") === "1") {
+            return;
+        }
+
+        loadNhanesForStory().then(rows => {
+            const genderRows = rows.filter(r => r.gender === 1 || r.gender === 2);
+            const byG = d3.rollup(genderRows, v => ({
+                mean: d3.mean(v, r => r.depressionRisk),
+                n: v.length
+            }), r => r.gender);
+
+            const women = byG.get(2) ?? { mean: 0, n: 0 };
+            const men = byG.get(1) ?? { mean: 0, n: 0 };
+            const yMax = Math.max(3, women.mean, men.mean) * 1.08;
+
+            const yScale = d3.scaleLinear()
+                .domain([0, yMax])
+                .range([baseline, baseline - barMaxPx]);
+
+            const data = [
+                { key: "women", label: "Women", cx: leftCx, mean: women.mean, n: women.n, color: womenColor },
+                { key: "men", label: "Men", cx: rightCx, mean: men.mean, n: men.n, color: menColor }
+            ];
+
+            barsG.selectAll("*").remove();
+
+            barsG.selectAll("rect.risk-bar")
+                .data(data)
+                .join("rect")
+                .attr("class", "risk-bar")
+                .attr("x", d => d.cx - barW / 2)
+                .attr("width", barW)
+                .attr("y", baseline)
+                .attr("height", 0)
+                .attr("rx", 6)
+                .attr("fill", d => d.color)
+                .attr("opacity", 0.88)
+                .transition()
+                .duration(900)
+                .ease(d3.easeCubicOut)
+                .attr("y", d => yScale(d.mean))
+                .attr("height", d => baseline - yScale(d.mean));
+
+            barsG.selectAll("text.risk-value")
+                .data(data)
+                .join("text")
+                .attr("class", "risk-value")
+                .attr("x", d => d.cx)
+                .attr("y", baseline)
+                .attr("text-anchor", "middle")
+                .style("font-size", "21px")
+                .style("font-weight", "700")
+                .style("fill", "#1a1a1a")
+                .text(d => fmt(d.mean))
+                .transition()
+                .delay(400)
+                .duration(500)
+                .attr("y", d => yScale(d.mean) - 10);
+
+            barsG.selectAll("text.risk-n")
+                .data(data)
+                .join("text")
+                .attr("class", "risk-n")
+                .attr("x", d => d.cx)
+                .attr("y", baseline + nLabelYOffset)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("fill", "#444")
+                .text(d => `n = ${d3.format(",")(d.n)}`);
+
+            barsG.append("line")
+                .attr("x1", 0)
+                .attr("x2", innerW)
+                .attr("y1", baseline)
+                .attr("y2", baseline)
+                .attr("stroke", "#333")
+                .attr("stroke-width", 1);
+
+            noteG.selectAll("*").remove();
+            const ratio = women.mean > 0 ? men.mean / women.mean : NaN;
+            const ratioTxt = Number.isFinite(ratio)
+                ? `Men’s mean is ${fmt(ratio)}× women’s in this sample (overall average ≈ ${fmt((women.mean + men.mean) / 2)}).`
+                : "";
+
+            const footLines = [
+                "Higher bars mean more frequent / severe symptoms on average across answered PHQ items — same reading as a “risk” tick upward in narrative viz.",
+                ratioTxt || "The gap can be subtle; the next story beat widens the lens (like the population zoom in Pain, Pills, and Prison Time)."
+            ];
+            const foot = noteG.append("text")
+                .attr("x", innerW / 2)
+                .attr("y", innerH + 8)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("fill", "#333");
+            footLines.forEach((line, i) => {
+                foot.append("tspan")
+                    .attr("x", innerW / 2)
+                    .attr("dy", i === 0 ? 0 : 22)
+                    .text(line);
+            });
+
+            promptG.transition().duration(400).style("opacity", 0)
+                .on("end", () => promptG.style("display", "none"));
+
+            barsG.transition().duration(500).style("opacity", 1);
+            noteG.transition().delay(300).duration(500).style("opacity", 1);
+
+            btn.attr("data-done", "1").text("Averages shown").attr("disabled", true);
+
+            const bridgeEl = document.getElementById("story-bridge");
+            if (bridgeEl) {
+                d3.select(bridgeEl).classed("story-hidden", false);
+                bridgeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        });
     });
-
 }
 
-function createSVG2() {
-
-    const newSvg = d3.select("#story-vis")
-        .append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight)
-        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
-
-    const newButton = d3.select("#story-vis")
-        .append("button")
-        .text("Button from SVG2")
-
-    newButton.on("click", function () {
-        d3.select(this).attr("disabled", true);
-        createSVG3()
+function setupDepressionStoryContinue() {
+    d3.select("#story-continue-age").on("click", function () {
+        const btn = d3.select(this);
+        if (btn.attr("data-done") === "1") {
+            return;
+        }
+        createDepressionAgeVis();
+        const ageSec = document.getElementById("story-age-section");
+        d3.select(ageSec).classed("story-hidden", false);
+        d3.select("#story-bridge").classed("story-hidden", true);
+        btn.attr("data-done", "1").attr("disabled", true).text("Age chart shown");
+        ageSec?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-
 }
 
-function createSVG3() {
+function createDepressionAgeVis() {
+    if (!d3.select("#story-age-vis").select("svg").empty()) {
+        return;
+    }
+    const sW = 1200;
+    const sH = 420;
+    const visMargin = { top: 36, right: 40, bottom: 96, left: 64 };
+    const innerW = sW - visMargin.left - visMargin.right;
+    const innerH = sH - visMargin.top - visMargin.bottom;
 
-    const newSvg = d3.select("#story-vis")
+    const barColor = d3.scaleOrdinal()
+        .domain(NHANES_AGE_BANDS.map(b => b.label))
+        .range(["#4e79a7", "#76b7b2", "#59a14f", "#edc949"]);
+
+    const svg = d3.select("#story-age-vis")
         .append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight)
-        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+        .attr("width", sW)
+        .attr("height", sH)
+        .attr("viewBox", `0 0 ${sW} ${sH}`)
+        .attr("role", "img")
+        .attr("aria-label", "Mean depression risk by age group");
 
+    const root = svg.append("g")
+        .attr("transform", `translate(${visMargin.left},${visMargin.top})`);
+
+    root.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", -10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "22px")
+        .style("font-weight", "600")
+        .style("fill", "#2a2a7b")
+        .text("Age-Stratified Analysis: Depression Symptoms by Age Group");
+
+    root.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", 16)
+        .attr("text-anchor", "middle")
+        .style("font-size", "15px")
+        .style("fill", "#444")
+        .text("Age at screening (years); same depression risk number as demographic comparison — now analyzed by life stage");
+
+    const chart = root.append("g")
+        .attr("transform", "translate(0, 36)");
+
+    const chartInnerH = innerH - 36;
+
+    loadNhanesForStory().then(rows => {
+        const banded = rows
+            .map(r => ({ ...r, band: nhanesAgeBand(r.ageYears) }))
+            .filter(r => r.band != null);
+
+        const byBand = d3.rollup(banded, v => ({
+            mean: d3.mean(v, r => r.depressionRisk),
+            n: v.length
+        }), r => r.band);
+
+        const data = NHANES_AGE_BANDS.map(b => {
+            const s = byBand.get(b.label);
+            return {
+                label: b.label,
+                mean: s?.mean ?? 0,
+                n: s?.n ?? 0
+            };
+        }).filter(d => d.n > 0);
+
+        if (!data.length) {
+            chart.append("text")
+                .attr("x", innerW / 2)
+                .attr("y", chartInnerH / 2)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("fill", "#666")
+                .text("No rows with age and depression score.");
+            return;
+        }
+
+        const fmt = d3.format(".2f");
+        const yMax = Math.max(3, d3.max(data, d => d.mean) ?? 0) * 1.08;
+
+        const x = d3.scaleBand()
+            .domain(data.map(d => d.label))
+            .range([0, innerW])
+            .padding(0.3);
+
+        const y = d3.scaleLinear()
+            .domain([0, yMax])
+            .nice()
+            .range([chartInnerH, 0]);
+
+        chart.append("line")
+            .attr("x1", 0)
+            .attr("x2", innerW)
+            .attr("y1", chartInnerH)
+            .attr("y2", chartInnerH)
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1);
+
+        chart.selectAll("rect.age-bar")
+            .data(data)
+            .join("rect")
+            .attr("class", "age-bar")
+            .attr("x", d => x(d.label) ?? 0)
+            .attr("width", x.bandwidth())
+            .attr("y", chartInnerH)
+            .attr("height", 0)
+            .attr("rx", 6)
+            .attr("fill", d => barColor(d.label))
+            .attr("opacity", 0.9)
+            .append("title")
+            .text(d => `${d.label} years: mean ${fmt(d.mean)} (${d3.format(",")(d.n)} respondents)`);
+
+        chart.selectAll("rect.age-bar")
+            .transition()
+            .duration(850)
+            .ease(d3.easeCubicOut)
+            .attr("y", d => y(d.mean))
+            .attr("height", d => chartInnerH - y(d.mean));
+
+        chart.selectAll("text.age-mean")
+            .data(data)
+            .join("text")
+            .attr("class", "age-mean")
+            .attr("x", d => (x(d.label) ?? 0) + x.bandwidth() / 2)
+            .attr("y", chartInnerH)
+            .attr("text-anchor", "middle")
+            .style("font-size", "18px")
+            .style("font-weight", "700")
+            .style("fill", "#1a1a1a")
+            .text(d => fmt(d.mean))
+            .transition()
+            .delay(350)
+            .duration(500)
+            .attr("y", d => y(d.mean) - 8);
+
+        chart.selectAll("text.age-n")
+            .data(data)
+            .join("text")
+            .attr("class", "age-n")
+            .attr("x", d => (x(d.label) ?? 0) + x.bandwidth() / 2)
+            .attr("y", chartInnerH + 34)
+            .attr("text-anchor", "middle")
+            .style("font-size", "14px")
+            .style("fill", "#444")
+            .text(d => `n = ${d3.format(",")(d.n)}`);
+
+        const xAxis = d3.axisBottom(x).tickSizeOuter(0);
+        chart.append("g")
+            .attr("transform", `translate(0,${chartInnerH})`)
+            .call(xAxis)
+            .selectAll("text")
+            .style("font-size", "15px")
+            .style("fill", "#222");
+
+        chart.append("g")
+            .call(d3.axisLeft(y).ticks(6))
+            .selectAll("text")
+            .style("font-size", "13px");
+
+        chart.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -chartInnerH / 2)
+            .attr("y", -44)
+            .attr("text-anchor", "middle")
+            .style("font-size", "15px")
+            .style("fill", "#333")
+            .text("Mean depression risk #");
+    });
 }
