@@ -270,12 +270,16 @@ function init(){
     setupDepressionStoryContinue();
 }
 
+
+//map county id cleaner
+const cleanIDMap = d => String(d).padStart(5, "0");
+
 //map helper
 function getCurrentValueMap() {
     const filtered = mapData.filter(d => +d.year === +selectedYear);
 
     return new Map(
-        filtered.map(d => [cleanID(d.countyID), d.value])
+        filtered.map(d => [cleanIDMap(d.countyID), d.value])
     );
 }
 
@@ -301,8 +305,6 @@ async function createMapVis() {
         projection.translate()[0],
         projection.translate()[1] + 20
     ]);
-
-    const cleanID = d => String(d).padStart(5, "0");
 
     const valuemap = getCurrentValueMap();
 
@@ -347,11 +349,11 @@ async function createMapVis() {
         .attr("class", "county")
         .attr("d", path)
         .attr("data-value", d => {
-            const v = valuemap.get(cleanID(d.id));
+            const v = valuemap.get(cleanIDMap(d.id));
             return v != null ? v : "";
         })
         .attr("fill", d => {
-            const v = valuemap.get(cleanID(d.id));
+            const v = valuemap.get(cleanIDMap(d.id));
             return v != null ? color(v) : "url(#diagonalHatch)";
         })
         .style("stroke", "#fff")
@@ -461,18 +463,18 @@ function updateMap() {
     const filtered = mapData.filter(d => +d.year === +selectedYear);
 
     const valuemap = new Map(
-        filtered.map(d => [cleanID(d.countyID), d.value])
+        filtered.map(d => [cleanIDMap(d.countyID), d.value])
     );
 
     mapsvg.selectAll("path.county")
         .transition()
         .duration(10)
         .attr("data-value", d => {
-            const v = valuemap.get(cleanID(d.id));
+            const v = valuemap.get(cleanIDMap(d.id));
             return v != null ? v : "";
         })
         .attr("fill", d => {
-            const v = valuemap.get(cleanID(d.id));
+            const v = valuemap.get(cleanIDMap(d.id));
             return v != null
                 ? color(v)
                 : "url(#diagonalHatch)"; 
