@@ -176,6 +176,7 @@ svg {
     padding: 8px 12px;
     border: 1px solid var(--outline);
     border-radius: 6px;
+    margin: 0 auto;
 }
 
 #reddit-layout {
@@ -259,4 +260,14 @@ svg {
     .subreddit-options {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
+}
+
+.county {
+    stroke: #fff;
+    stroke-width: 0.2px;
+}
+
+.county-hover {
+    stroke: #111;
+    stroke-width: 1.2px;
 }

@@ -270,115 +270,192 @@ function init(){
     setupDepressionStoryContinue();
 }
 
+//map helper
+function getCurrentValueMap() {
+    const filtered = mapData.filter(d => +d.year === +selectedYear);
+
+    return new Map(
+        filtered.map(d => [cleanID(d.countyID), d.value])
+    );
+}
 
 //map function adapted from https://observablehq.com/@d3/choropleth/2
-async function createMapVis(){
-    //set colors, project, and path
+async function createMapVis() {
+
     const color = d3.scaleQuantize([10, 35], d3.schemePurples[7].slice(2));
     const projection = d3.geoAlbersUsa();
     const path = d3.geoPath(projection);
 
-    //us is the us map
     const us = await fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
         .then(r => r.json());
+
     const counties = topojson.feature(us, us.objects.counties);
-    //adjust size of projection manually
-    projection.fitSize([width + margin.left + margin.right - 180, height + margin.top + margin.bottom - 50], counties);
-    //adjust padding around projection
+
+    projection.fitSize(
+        [width + margin.left + margin.right - 180,
+         height + margin.top + margin.bottom - 50],
+        counties
+    );
+
     projection.translate([
         projection.translate()[0],
         projection.translate()[1] + 20
     ]);
 
-    //filter for current year
-    const filtered = mapData.filter(d => +d.year === +selectedYear);
+    const cleanID = d => String(d).padStart(5, "0");
 
+    const valuemap = getCurrentValueMap();
 
-    //map county codes (ids) to depression rates (value)
-    const valuemap = new Map(
-  filtered.map(d => [cleanID(d.countyID), d.value])
-);
-
-    //get states and statemap
     const states = topojson.feature(us, us.objects.states);
-    const statemap = new Map(states.features.map(d => [d.id, d]));
     const statemesh = topojson.mesh(us, us.objects.states, (a, b) => a !== b);
 
-    //draw map on svg
-mapsvg.append("g")
-  .selectAll("path")
-  .data(counties.features)
-  .join("path")
-  .attr("class", "county")
-  .attr("fill", d => {
-      const v = valuemap.get(cleanID(d.id));
-      return v != null ? color(v) : "#cacaca";
-  })
-  .attr("d", path)
-  .append("title")
-  .text(d => {
-      const v = valuemap.get(cleanID(d.id));
-      return v != null
-        ? `${d.properties.name}: ${v}%`
-        : `${d.properties.name}: No data`;
-  });
+    let defs = mapsvg.select("defs");
+    if (defs.empty()) {
+        defs = mapsvg.append("defs");
+    }
 
-    //draw states on map
-    mapsvg.append("path")
-        .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
-        .attr("fill", "none")
-        .attr("stroke", "white")
-        .attr("stroke-linejoin", "round")
+    defs.select("#diagonalHatch").remove();
+
+    const pattern = defs.append("pattern")
+        .attr("id", "diagonalHatch")
+        .attr("patternUnits", "userSpaceOnUse")
+        .attr("width", 6)
+        .attr("height", 6);
+
+    // background fill for no-data hatch
+    pattern.append("rect")
+        .attr("width", 6)
+        .attr("height", 6)
+        .attr("fill", "#6a6767");
+
+    // real diagonal line hatch
+    pattern.append("line")
+        .attr("x1", 0)
+        .attr("y1", 6)
+        .attr("x2", 6)
+        .attr("y2", 0)
+        .attr("stroke", "#292929")
+        .attr("stroke-width", 1);
+
+    //map layers
+    const zoomLayer = mapsvg.append("g");
+
+    zoomLayer.append("g")
+        .selectAll("path")
+        .data(counties.features)
+        .join("path")
+        .attr("class", "county")
         .attr("d", path)
+        .attr("data-value", d => {
+            const v = valuemap.get(cleanID(d.id));
+            return v != null ? v : "";
+        })
+        .attr("fill", d => {
+            const v = valuemap.get(cleanID(d.id));
+            return v != null ? color(v) : "url(#diagonalHatch)";
+        })
+        .style("stroke", "#fff")
+        .style("stroke-width", 0.2)
+        .on("mouseenter", function(event, d) {
+
+            d3.select(this)
+                .raise()
+                .classed("county-hover", true);
+
+            const v = d3.select(this).attr("data-value");
+
+            showTooltip(event, `
+                <strong>County:</strong> ${d.properties.name}<br>
+                <strong>Depression Rate:</strong> ${
+                    v !== "" ? `${v}%` : "No data"
+                }
+            `);
+        })
+        .on("mousemove", function(event) {
+            d3.select("#tooltip")
+                .style("left", `${event.pageX + 12}px`)
+                .style("top", `${event.pageY - 28}px`);
+        })
+        .on("mouseleave", function() {
+            hideTooltip();
+            d3.select(this).classed("county-hover", false);
+        });
+
+    // state borders
+    zoomLayer.append("path")
+        .datum(statemesh)
+        .attr("fill", "none")
         .attr("stroke", "black")
-        .attr("stroke-width", 0.2);
+        .attr("stroke-width", 0.2)
+        .attr("d", path);
 
-    //make legend
-    const legend = mapsvg.append("g")
-        .attr("transform", `translate(${width - 145}, ${height - 50})`);
+    //legend
+    const legendBoxSize = 18;
+    const legendSpacing = 26;
 
-    //append title to legend
-    legend.append("text")
-    .attr("x", 0)
-    .attr("y", -10)
-    .text("Prevalence (%)")
-    .style("font-size", "10px")
-    .style("font-weight", "bold");
-
-    //object with data + labels for legend
     const legendData = color.range();
 
-    //make data squares for legend
-    legend.selectAll("rect")
-    .data(legendData)
-    .join("rect")
-    .attr("x", 0)
-    .attr("y", (d, i) => i * 12)
-    .attr("width", 10)
-    .attr("height", 10)
-    .attr("fill", d => d);
+    const legendWidth = 140;
+    const legendHeight = legendData.length * legendSpacing + 40;
 
-    //make data labels for legend
+    const legend = mapsvg.append("g")
+        .attr("transform",
+            `translate(${svgWidth - legendWidth - 30}, ${svgHeight - legendHeight - 25})`
+        );
+
+    legend.append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .attr("rx", 6)
+        .attr("fill", "white")
+        .attr("opacity", 0.9)
+        .attr("stroke", "#ccc");
+
+    legend.append("text")
+        .attr("x", 12)
+        .attr("y", 22)
+        .text("Prevalence (%)")
+        .style("font-size", "16px")
+        .style("font-weight", "bold");
+
+    legend.selectAll("rect.legend-box")
+        .data(legendData)
+        .join("rect")
+        .attr("x", 12)
+        .attr("y", (d, i) => 35 + i * legendSpacing)
+        .attr("width", legendBoxSize)
+        .attr("height", legendBoxSize)
+        .attr("fill", d => d);
+
     legend.selectAll(".legend-label")
-    .data(legendData)
-    .join("text")
-    .attr("class", "legend-label")
-    .attr("x", 15)
-    .attr("y", (d, i) => i * 12 + 9)
-    .text((d, i) => {
-        const domain = color.domain();
-        const step = (domain[1] - domain[0]) / color.range().length;
-        const start = domain[0] + i * step;
-        const end = start + step;
-        return `${Math.round(start)}–${Math.round(end)}%`;
-    })
-    .style("font-size", "10px");
+        .data(legendData)
+        .join("text")
+        .attr("x", 40)
+        .attr("y", (d, i) => 35 + i * legendSpacing + 14)
+        .text((d, i) => {
+            const domain = color.domain();
+            const step = (domain[1] - domain[0]) / color.range().length;
+            const start = domain[0] + i * step;
+            const end = start + step;
+            return `${Math.round(start)}–${Math.round(end)}%`;
+        })
+        .style("font-size", "12px");
+
+    //zoom
+    const zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .translateExtent([[0, 0], [svgWidth, svgHeight]])
+        .on("zoom", (event) => {
+            zoomLayer.attr("transform", event.transform);
+        });
+
+    d3.select("#map-vis svg").call(zoom);
 
     return mapsvg.node();
-
 }
 
 function updateMap() {
+
     const color = d3.scaleQuantize([10, 35], d3.schemePurples[7].slice(2));
 
     const filtered = mapData.filter(d => +d.year === +selectedYear);
@@ -387,23 +464,18 @@ function updateMap() {
         filtered.map(d => [cleanID(d.countyID), d.value])
     );
 
-    // UPDATE FILL
     mapsvg.selectAll("path.county")
         .transition()
-        .duration(500)
+        .duration(10)
+        .attr("data-value", d => {
+            const v = valuemap.get(cleanID(d.id));
+            return v != null ? v : "";
+        })
         .attr("fill", d => {
             const v = valuemap.get(cleanID(d.id));
-            return v != null ? color(v) : "#cacaca";
-        });
-
-    // UPDATE TOOLTIP
-    mapsvg.selectAll("path.county")
-        .select("title")
-        .text(d => {
-            const v = valuemap.get(cleanID(d.id));
             return v != null
-                ? `${d.properties.name}: ${v}%`
-                : `${d.properties.name}: No data`;
+                ? color(v)
+                : "url(#diagonalHatch)"; 
         });
 }
 
@@ -1097,9 +1169,7 @@ function createDepressionAgeVis() {
             .attr("height", 0)
             .attr("rx", 6)
             .attr("fill", d => barColor(d.label))
-            .attr("opacity", 0.9)
-            .append("title")
-            .text(d => `${d.label} years: mean ${fmt(d.mean)} (${d3.format(",")(d.n)} respondents)`);
+            .attr("opacity", 0.9);
 
         chart.selectAll("rect.age-bar")
             .transition()
