@@ -19,7 +19,7 @@
         <div class="sub-container">
             <h2>Depression affects 10-35% of the US population. </h2>
             <p class="subheader">
-                Crude prevalence of depression in adults (>18 years) by county. 
+                Crude prevalence of depression in adults (>18 years) by county.
             </p>
             <div id="year-controls">
             <label>
@@ -36,21 +36,48 @@
             </div>
             <div id="map-vis"></div> <!--  Will hold map vis  -->
             <p class="caption">
-                Data from the <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>. 
+                Data from the <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>.
             </p>
         </div>
 
-        <div class="sub-container">
-            <h2>Section 2 header</h2>
-            <p class="subheader">
-                Section 2 subheader
-            </p>
-            <div id="reddit-layout">
-                <div id="reddit-vis"></div> <!--  Will hold reddit vis  -->
-                <div id="subreddit-controls" aria-label="Subreddit visibility controls"></div>
+        <div class="sub-container section2-container">
+            <div class="section2-title-section">
+                <h2>Depression on Social Media: a trend over 15 years</h2>
+            </div>
+            <div id="section2-scrolly">
+                <div id="section2-stage">
+                    <div id="section2-plot-area">
+                        <div id="section2-compare-scene" class="section2-scene is-active">
+                            <div id="reddit-control-vis"></div>
+                        </div>
+                        <div id="section2-post-scene" class="section2-scene">
+                            <div id="reddit-vis"></div> <!--  Will hold reddit vis  -->
+                        </div>
+                        <div id="section2-share-scene" class="section2-scene">
+                            <div id="reddit-contribution-vis"></div>
+                        </div>
+                    </div>
+                    <aside id="section2-description">
+                        <div id="section2-progress" aria-label="Section 2 progress">
+                            <div class="section2-progress-track">
+                                <div class="section2-progress-fill"></div>
+                            </div>
+                        </div>
+                        <div class="section2-nav-buttons">
+                            <button type="button" id="section2-back">Back</button>
+                            <button type="button" id="section2-next">Next</button>
+                        </div>
+                        <div class="section2-desc-copy">
+                            <h3 id="section2-desc-title">Mental-health subreddit activity compared with general-interest Reddit</h3>
+                    <p id="section2-desc-body">
+                                Quarterly post totals for all selected mental-health subreddits combined versus general-interest control subreddits.
+                            </p>
+                        </div>
+                    </aside>
+                </div>
             </div>
             <p class="caption">
-                Section 2 caption
+                Source of Data: Watchful1. (2026). Subreddit comments/submissions 2005-06 to 2025-12 [Data set]. Academic Torrents. https://academictorrents.com/details/3e3f64dee22dc304cdd2546254ca1f8e8ae542b4 
             </p>
         </div>
 
@@ -83,10 +110,10 @@
             </div>
         </div>
 
-        <div id="tooltip" style="display:none"></div> 
+        <div id="tooltip" style="display:none"></div>
 
     </div>
-    
+
     <!-- Load D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider"></script>

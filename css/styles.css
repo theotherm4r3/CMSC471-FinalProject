@@ -179,86 +179,171 @@ svg {
     margin: 0 auto;
 }
 
-#reddit-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    max-width: 100%;
-    margin: 0;
-    font-size: 10px;
-}
-
-#subreddit-controls {
-    flex: 0 0 190px;
-    width: 190px;
-    max-width: 190px;
-    margin: 20px 0 0 0;
-    padding: 12px;
-    border: 1px solid var(--outline);
-    border-radius: 2px;
-    font-size: 10px;
-}
-
+#reddit-control-vis,
+#reddit-contribution-vis,
 #reddit-vis {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 100%;
     margin: 0;
-}
-
-.control-title {
-    max-width: 100%;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
-.subreddit-options {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px 12px;
-    max-width: 100%;
-}
-
-.subreddit-option {
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 8px;
     width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+}
+
+#reddit-control-vis svg,
+#reddit-contribution-vis svg,
+#reddit-vis svg {
+    width: 100%;
+    height: 100%;
     max-width: 100%;
+    max-height: 100%;
     margin: 0;
+}
+
+#section2-scrolly {
+    position: relative;
+}
+
+#section2-stage {
+    max-width: 1200px;
+    height: 700px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(190px, 1fr);
+    gap: 28px;
+    overflow: visible;
+    padding: 0;
+    background: transparent;
+}
+
+.section2-title-section {
+    max-width: 1200px;
+    margin: 0 auto 18px auto;
+}
+
+#section2-plot-area {
+    position: relative;
+    height: 700px;
+    padding: 24px;
+    border: 1px solid #8bb8e8;
+    border-radius: 7px;
+    background: #eef6ff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.section2-scene {
+    position: absolute;
+    inset: 24px;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: translateY(22px);
+    pointer-events: none;
+    transition: opacity 650ms ease, transform 650ms ease;
+}
+
+.section2-scene.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+#section2-description {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    border-radius: 7px;
+    background-color: var(--secondary-color);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+}
+
+#section2-progress {
+    width: 100%;
+}
+
+.section2-progress-track {
+    position: relative;
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    overflow: hidden;
+}
+
+.section2-progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--primary-color);
+    transition: width 180ms ease;
+}
+
+.section2-nav-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid #a8a8a8;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.section2-nav-buttons button {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 10px 0;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #444;
     font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.subreddit-option input {
-    flex: 0 0 auto;
-    margin: 4px 0 0 0;
+.section2-nav-buttons button + button {
+    border-left: 1px solid #a8a8a8;
 }
 
-.subreddit-option span {
-    display: inline-block;
+.section2-nav-buttons button:disabled {
+    color: #aaa;
+    cursor: default;
+}
+
+.section2-desc-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#section2-desc-title {
     margin: 0;
-    max-width: 100%;
-    padding: 2px 6px;
-    border-radius: 1px;
-    line-height: 1.3;
+    color: var(--text-dark);
+    font-size: 18px;
+    line-height: 1.25;
+}
+
+#section2-desc-body {
+    margin: 0;
+    color: var(--text-dark);
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 @media (max-width: 900px) {
-    #reddit-layout {
-        flex-direction: column;
+    #section2-stage {
+        position: relative;
+        height: auto;
+        grid-template-columns: 1fr;
     }
 
-    #subreddit-controls {
-        flex-basis: auto;
-        width: 100%;
-        max-width: 100%;
+    #section2-plot-area {
+        height: 620px;
     }
 
-    .subreddit-options {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    #section2-description {
+        padding-top: 0;
     }
 }
 

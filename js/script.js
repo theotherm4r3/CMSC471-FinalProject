@@ -3,45 +3,92 @@ console.log('D3 Version:', d3.version);
 let mapData = []
 let selectedYear = 2020
 
-let r_casesData_total = []
-let r_casesData_perday = []
-let r_eventData = []
-let r_sentimentData = []
+let r_postCommentData = []
+const r_controlSeries = []
+let r_postChartYear = null;
+let section2RevealObserverInitialized = false;
 
 const parseDate = d3.timeParse("%Y-%m-%d");
-let r_selectedDateRange = [parseDate("2020-01-01"), parseDate("2020-04-20")];
+const section2StartDate = parseDate("2011-01-01");
 const r_allSubreddits = [
-    "COVID19_support",
+    // "COVID19_support",
     "addiction",
     "adhd",
     "anxiety",
     "autism",
-    "bipolarreddit",
+    "bipolar",
     "bpd",
     "depression",
-    "healthanxiety",
+    // "healthanxiety",
     "lonely",
-    "mentalhealth",
+    // "ForeverAlone",
+    // "mentalhealth",
     "ptsd",
+    "Psychosis",
     "schizophrenia",
     "socialanxiety",
     "suicidewatch"
 ];
-const r_visibleSubreddits = [
-    "lonely",
+
+const r_main_subs = [
+    'depression',
+    'lonely',
+    'suicidewatch'
+]
+const r_other_subs = [
+    "adhd",
+    "autism",
+    "anxiety",
+    "bpd",
+    "bipolar",
+    "addiction",
+
+
+
+
+
+
+    // "healthanxiety",
+    // "ForeverAlone",
+    // "mentalhealth",
+    "ptsd",
+    "Psychosis",
     "schizophrenia",
-    "socialanxiety",
-    "suicidewatch"
+    "socialanxiety"
+]
+
+const r_ctrl_subs = [
+    "funny",
+    "news",
+    "gaming",
+    "worldnews",
+    "todayilearned",
+    // "askreddit"
 ];
+
+const r_control_file_subs = new Map([
+    ["./data/funny_wnews_gaming__posts_counts.csv", ["funny", "gaming", "worldnews"]],
+    ["./data/news_tdil_post_counts.csv", ["news", "todayilearned"]],
+    ["./data/askreddit_post_counts.csv", ["askreddit"]]
+]);
+const r_ctrl_sub_set = new Set(r_ctrl_subs.map(subreddit => String(subreddit).toLowerCase()));
+const r_control_files = Array.from(r_control_file_subs)
+    .filter(([, subreddits]) => subreddits.some(subreddit => r_ctrl_sub_set.has(String(subreddit).toLowerCase())))
+    .map(([file]) => file);
+
 
 const t = 1000; // 1000ms = 1 second
 
 //make margins
 const margin = {top: 40, right: 40, bottom: 60, left: 60};
 const width = 1200 - margin.left - margin.right;
-const height = 400 - margin.top - margin.bottom;
+const height = 700 - margin.top - margin.bottom;
 const svgWidth = width + margin.left + margin.right;
 const svgHeight = height + margin.top + margin.bottom;
+const redditWidth = 1200 - margin.left - 160;
+const redditHeight = 700 - margin.top - margin.bottom;
+const redditSvgWidth = redditWidth + margin.left + 160;
+const redditSvgHeight = redditHeight + margin.top + margin.bottom;
 
 const cleanID = d => String(d).replace(/^0+/, "");
 
@@ -88,27 +135,48 @@ function loadNhanesForStory() {
 
 
 const subColor = d3.scaleOrdinal()
-    .domain(r_allSubreddits)
+    .domain(r_other_subs)
     .range([
-        "#cd9b9b",
-        "#c1a68a",
-        "#b8c18a",
-        "#96c18a",
-        "#8ac1b1",
-        "#8aaec1",
-        "#9b9bcd",
-        "#b68ac1",
-        "#c18aac",
-        "#d97979",
-        "#d99b59",
-        "#a4b84f",
-        "#59a66f",
-        "#4f92b8",
-        "#7a6fc2"
+        "#b99e58",
+            "#f9c74f",
+            "#f9a13e",
+            "#f08c36",
+            "#ba6146",
+            "#ad5f4e",
+            "#97514b",
+            "#a62825",
+            "#7c1f1e",
+            "#5b1618"
     ]);
 
+const mainSubColor = d3.scaleOrdinal()
+    .domain(r_main_subs)
+    .range([
+        "#0047ff",
+        "#0085ff",
+        "#00b8d9"
+    ]);
+
+const r_ctrl_colors = d3.scaleOrdinal()
+    .domain(r_ctrl_subs)
+    .range([
+        "#5296dd",
+        "#92bddf",
+        "	#ffffff",
+        "	#afafaf",
+        "#ff6314"
+    ])
+
+const subredditColor = subreddit => r_main_subs.includes(subreddit)
+    ? mainSubColor(subreddit)
+    : subColor(subreddit);
+
+const subredditStrokeWidth = subreddit => r_main_subs.includes(subreddit) ? 4.7 : 1.8;
+
 const formatDate = d3.timeFormat("%b %d, %Y");
+const formatWeekday = d3.timeFormat("%A");
 const formatComma = d3.format(",");
+const subredditColumnKey = subreddit => subreddit.toLowerCase();
 
 function showTooltip(event, content) {
     d3.select("#tooltip")
@@ -123,47 +191,61 @@ function hideTooltip() {
         .style("display", "none");
 }
 
-function createSubredditControls() {
-    const controls = d3.select("#subreddit-controls");
+function setupSection2ScrollReveal() {
+    if (section2RevealObserverInitialized) {
+        return;
+    }
 
-    controls.selectAll("*").remove();
+    const scrolly = document.querySelector("#section2-scrolly");
+    const stage = document.querySelector("#section2-stage");
+    const compareScene = document.querySelector("#section2-compare-scene");
+    const postScene = document.querySelector("#section2-post-scene");
+    const shareScene = document.querySelector("#section2-share-scene");
+    const progressFill = document.querySelector(".section2-progress-fill");
+    const backButton = document.querySelector("#section2-back");
+    const nextButton = document.querySelector("#section2-next");
+    const descTitle = document.querySelector("#section2-desc-title");
+    const descBody = document.querySelector("#section2-desc-body");
+    if (!scrolly || !stage || !compareScene || !postScene || !shareScene || !progressFill || !backButton || !nextButton || !descTitle || !descBody) {
+        return;
+    }
 
-    controls.append("div")
-        .attr("class", "control-title")
-        .text("Visible subreddits");
+    const scenes = [compareScene, postScene, shareScene];
+    const sceneCopy = [
+        {
+            title: "The Steady Growth of Mental Health Related Communities",
+            body: "lorem ipsum"
+        },
+        {
+            title: "The Domination of Depression Related Communities",
+            body: "lorem ipsum"
+        },
+        {
+            title: "The Breakdown of the Domination",
+            body: "lorem ipsum"
+        }
+    ];
+    let activeIndex = 0;
 
-    const options = controls.append("div")
-        .attr("class", "subreddit-options");
+    const setActiveScene = index => {
+        activeIndex = Math.max(0, Math.min(scenes.length - 1, index));
 
-    const labels = options.selectAll("label")
-        .data(r_allSubreddits)
-        .join("label")
-        .attr("class", "subreddit-option");
-
-    labels.append("input")
-        .attr("type", "checkbox")
-        .attr("name", "subreddit")
-        .attr("value", d => d)
-        .property("checked", d => r_visibleSubreddits.includes(d))
-        .on("change", function(event, subreddit) {
-            if (this.checked) {
-                if (!r_visibleSubreddits.includes(subreddit)) {
-                    r_visibleSubreddits.push(subreddit);
-                }
-            } else {
-                const index = r_visibleSubreddits.indexOf(subreddit);
-                if (index !== -1) {
-                    r_visibleSubreddits.splice(index, 1);
-                }
-            }
-
-            createRedVis();
+        scenes.forEach((scene, sceneIndex) => {
+            scene.classList.toggle("is-active", sceneIndex === activeIndex);
         });
 
-    labels.append("span")
-        .style("background-color", d => subColor(d))
-        .text(d => `r/${d}`)
-        .style("font-size", "10px");
+        const copy = sceneCopy[activeIndex];
+        descTitle.textContent = copy.title;
+        descBody.textContent = copy.body;
+        backButton.disabled = activeIndex === 0;
+        nextButton.disabled = activeIndex === scenes.length - 1;
+        progressFill.style.width = `${((activeIndex + 1) / scenes.length) * 100}%`;
+    };
+
+    backButton.addEventListener("click", () => setActiveScene(activeIndex - 1));
+    nextButton.addEventListener("click", () => setActiveScene(activeIndex + 1));
+    setActiveScene(0);
+    section2RevealObserverInitialized = true;
 }
 
 //load data after page is loaded
@@ -198,72 +280,66 @@ function init(){
     .catch(error => console.error('Error loading data:', error));
 
 
-    const casesPromise_total = d3.csv("./data/us.csv", function(d){
-        return {
-            date: parseDate(d.date),
-            cases: +d.cases,
-            deaths: +d.deaths
-        }
+    const postCommentPromise = d3.csv("./data/05t25post_com_count.csv", function(d){
+        const row = { date: parseDate(d.date) };
+        r_allSubreddits.forEach(subreddit => {
+            const key = subredditColumnKey(subreddit);
+            const posts = +(d[`${key}_posts`] || 0);
+            const comments = +(d[`${key}_coms`] || 0);
+            row[subreddit] = {
+                posts,
+                comments,
+                total: posts + comments
+            };
+        });
+        return row;
     })
     .then(data => {
-        r_casesData_total = data
-        console.log(r_casesData_total)
+        r_postCommentData = data.filter(d => d.date && d.date >= section2StartDate)
+        console.log(r_postCommentData)
     })
-    .catch(error => console.error('Error loading cases data:', error));
+    .catch(error => console.error('Error loading post/comment count data:', error));
 
+    const controlPromise = Promise.all(r_control_files.map(file => d3.csv(file)))
+        .then(fileRows => {
+            const controlMap = new Map();
 
-    const casesPromise_perday = d3.csv("./data/us_new_cases_per_day.csv", function(d){
-        return {
-            date: parseDate(d.date),
-            cases: +d.cases,
-            deaths: +d.deaths
-        }
-    })
-    .then(data => {
-        r_casesData_perday = data
-        console.log(r_casesData_perday)
-    })
-    .catch(error => console.error('Error loading cases data:', error));
+            fileRows.flat().forEach(row => {
+                const date = parseDate(row.date);
+                if (!date || date < section2StartDate) {
+                    return;
+                }
 
+                Object.keys(row)
+                    .filter(key => key.endsWith("_posts"))
+                    .forEach(key => {
+                        const subreddit = key.replace(/_posts$/, "");
+                        if (!r_ctrl_sub_set.has(subreddit)) {
+                            return;
+                        }
 
-    const eventsPromise = d3.csv("./data/covid_major_events.csv", function(d){
-        return {
-            event: d.event,
-            date: parseDate(d.time)
-        }
-    })
-    .then(data => {
-        r_eventData = data
-        console.log(r_eventData)
-    })
-    .catch(error => console.error('Error loading event data:', error));
+                        if (!controlMap.has(subreddit)) {
+                            controlMap.set(subreddit, []);
+                        }
 
-    const sentimentPromise = d3.csv("./data/daily_subreddit_sentiment_counts.csv", function(d){
-        return {
-            date: parseDate(d.date),
-            subreddit: d.subreddit,
-            period: d.period,
-            totalPosts: +d.total_posts,
-            positivePosts: +d.positive_posts,
-            negativePosts: +d.negative_posts,
-            neutralPosts: +d.neutral_posts,
-            unknownPosts: +d.unknown_posts,
-            positiveRatio: +d.positive_ratio,
-            negativeRatio: +d.negative_ratio,
-            neutralRatio: +d.neutral_ratio,
-            unknownRatio: +d.unknown_ratio,
-            avgCompound: +d.avg_compound
-        }
-    })
-    .then(data => {
-        r_sentimentData = data
-        console.log(r_sentimentData)
-    })
-    .catch(error => console.error('Error loading sentiment data:', error));
+                        controlMap.get(subreddit).push({
+                            date,
+                            posts: +(row[key] || 0)
+                        });
+                    });
+            });
 
-    Promise.all([casesPromise_total, casesPromise_perday, eventsPromise, sentimentPromise]).then(() => {
-        createSubredditControls()
+            r_controlSeries.splice(0, r_controlSeries.length, ...Array.from(controlMap, ([subreddit, values]) => ({
+                sub: subreddit,
+                label: `r/${subreddit}`,
+                values: values.sort((a, b) => a.date - b.date)
+            })).sort((a, b) => a.label.localeCompare(b.label)));
+        })
+        .catch(error => console.error('Error loading control post count data:', error));
+
+    Promise.all([postCommentPromise, controlPromise]).then(() => {
         createRedVis()
+        setupSection2ScrollReveal()
     });
 
     createDepressionGenderVis();
@@ -477,327 +553,603 @@ function updateMap() {
             const v = valuemap.get(cleanIDMap(d.id));
             return v != null
                 ? color(v)
-                : "url(#diagonalHatch)"; 
+                : "url(#diagonalHatch)";
         });
 }
 
 
 function createRedVis() {
     redditsvg.selectAll("*").remove();
+    d3.select("#reddit-control-vis").selectAll("*").remove();
+    d3.select("#reddit-contribution-vis").selectAll("*").remove();
 
-    // further data processing
-    const visibleCasesData = r_casesData_perday.filter(d => {
-        return d.date >= r_selectedDateRange[0] && d.date <= r_selectedDateRange[1];
-    });
+    const availableDates = r_postCommentData
+        .map(d => d.date)
+        .filter(Boolean)
+        .sort((a, b) => a - b);
 
-    const casesByDate = new Map(
-        visibleCasesData.map(d => [+d.date, d.cases])
-    );
+    if (!availableDates.length) {
+        redditsvg.append("text")
+            .attr("x", redditWidth / 2)
+            .attr("y", redditHeight / 2)
+            .attr("text-anchor", "middle")
+            .style("fill", "#666")
+            .text("No post/comment count data available.");
+        return;
+    }
 
-    const visibleEventData = r_eventData.filter(d => {
-        return d.date >= r_selectedDateRange[0] && d.date <= r_selectedDateRange[1];
-    });
+    const fullDateRange = [availableDates[0], availableDates[availableDates.length - 1]];
+    const panelWidth = redditWidth;
+    const panelHeight = redditHeight;
+    const quarterLabel = date => `Q${Math.floor(date.getMonth() / 3) + 1} ${date.getFullYear()}`;
+    const quarterStart = date => new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1);
+    const toQuarterlyValues = values => {
+        const byQuarter = d3.rollups(
+            values,
+            rows => ({
+                date: quarterStart(rows[0].date),
+                posts: d3.sum(rows, d => d.posts),
+                comments: d3.sum(rows, d => d.comments)
+            }),
+            d => +quarterStart(d.date)
+        );
 
+        return byQuarter
+            .map(([, value]) => value)
+            .sort((a, b) => a.date - b.date);
+    };
 
-    const visibleSentimentData = r_sentimentData.filter(d => {
-        return r_visibleSubreddits.includes(d.subreddit)
-            && d.date >= r_selectedDateRange[0]
-            && d.date <= r_selectedDateRange[1];
-    });
+    const toQuarterlyPostValues = values => {
+        const byQuarter = d3.rollups(
+            values,
+            rows => ({
+                date: quarterStart(rows[0].date),
+                posts: d3.sum(rows, d => d.posts)
+            }),
+            d => +quarterStart(d.date)
+        );
 
-    const sentimentPostPerDay = d3.rollups(
-        visibleSentimentData,
-        rows => {
+        return byQuarter
+            .map(([, value]) => value)
+            .sort((a, b) => a.date - b.date);
+    };
+
+    const activityBySubreddit = r_allSubreddits
+        .map(subreddit => {
+            const dailyValues = r_postCommentData.map(row => ({
+                date: row.date,
+                posts: row[subreddit]?.posts ?? 0,
+                comments: row[subreddit]?.comments ?? 0
+            }));
+
             return {
-                totalPosts: d3.sum(rows, d => d.totalPosts),
-                positivePosts: d3.sum(rows, d => d.positivePosts),
-                negativePosts: d3.sum(rows, d => d.negativePosts)
+                sub: subreddit,
+                values: toQuarterlyValues(dailyValues)
             };
-        },
-        d => d.subreddit,
-        d => +d.date
-    ).map(([subreddit, values]) => {
-        return {
-            sub: subreddit,
-            values: values.map(([date, posts]) => {
-                return {
-                    date: new Date(date),
-                    numbOfPosts: posts.totalPosts,
-                    positivePosts: posts.positivePosts,
-                    negativePosts: posts.negativePosts,
-                    positivePercent: posts.totalPosts ? posts.positivePosts / posts.totalPosts : 0,
-                    negativePercent: posts.totalPosts ? posts.negativePosts / posts.totalPosts : 0
-                };
-            }).sort((a, b) => a.date - b.date)
-        };
-    });
-
-    console.log(sentimentPostPerDay);
-
-    const wrapText = (text, width) => {
-        text.each(function() {
-            const text = d3.select(this);
-            const words = text.text().split(/\s+/).reverse();
-            const x = text.attr("x");
-            const y = text.attr("y");
-            const lineHeight = 10;
-            let line = [];
-            let lineNumber = 0;
-            let word = words.pop();
-            let tspan = text.text(null)
-                .append("tspan")
-                .attr("x", x)
-                .attr("y", y);
-
-            while (word) {
-                line.push(word);
-                tspan.text(line.join(" "));
-
-                if (tspan.node().getComputedTextLength() > width && line.length > 1) {
-                    line.pop();
-                    tspan.text(line.join(" "));
-                    line = [word];
-                    tspan = text.append("tspan")
-                        .attr("x", x)
-                        .attr("y", y)
-                        .attr("dy", `${++lineNumber * lineHeight}px`)
-                        .text(word);
-                }
-
-                word = words.pop();
-            }
         });
-    };
 
+    const drawControlComparisonChart = () => {
+        const container = d3.select("#reddit-control-vis");
+        container.selectAll("*").remove();
 
-    const x = d3.scaleTime()
-        .domain(r_selectedDateRange)
-        .range([0, width]);
+        const combinedMentalDaily = r_postCommentData.map(row => ({
+            date: row.date,
+            posts: d3.sum(r_allSubreddits, subreddit => row[subreddit]?.posts ?? 0)
+        }));
 
-    const maxCases = d3.max(visibleCasesData, d => d.cases) ?? 0;
-    const maxPosts = d3.max(sentimentPostPerDay, d => d3.max(d.values, v => v.numbOfPosts)) ?? 0;
+        const comparisonSeries = [
+            ...r_controlSeries.map(series => ({
+                label: series.label,
+                color: r_ctrl_colors(series.sub),
+                values: toQuarterlyPostValues(series.values),
+                strokeWidth: 3
+            })),
+            {
+                label: "Selected mental-health subreddits",
+                color: "#2a2a7b",
+                values: toQuarterlyPostValues(combinedMentalDaily),
+                strokeWidth: 5
+            }
+        ];
 
-    const y = d3.scaleLinear()
-        .domain([0, maxCases])
-        .nice()
-        .range([height, 0]);
+        const allValues = comparisonSeries.flatMap(series => series.values);
+        if (!allValues.length) {
+            container.append("p")
+                .style("color", "#666")
+                .text("No control comparison data available.");
+            return;
+        }
 
-    const yPosts = d3.scaleLinear()
-        .domain([0, maxPosts])
-        .nice()
-        .range([height, 0]);
+        const comparisonMargin = { top: 40, right: 210, bottom: 60, left: 78 };
+        const comparisonWidth = redditSvgWidth - comparisonMargin.left - comparisonMargin.right;
+        const comparisonHeight = redditSvgHeight - comparisonMargin.top - comparisonMargin.bottom;
+        const comparisonSvgHeight = redditSvgHeight;
 
-    const sentimentBarHeight = d3.scaleLinear()
-        .domain([0, 1])
-        .range([0, 45]);
+        const svg = container.append("svg")
+            .attr("width", redditSvgWidth)
+            .attr("height", comparisonSvgHeight)
+            .attr("viewBox", `0 0 ${redditSvgWidth} ${comparisonSvgHeight}`);
 
-    const createArea = () => {
-        return d3.area()
+        const chart = svg.append("g")
+            .attr("transform", `translate(${comparisonMargin.left},${comparisonMargin.top})`);
+
+        const x = d3.scaleTime()
+            .domain(fullDateRange)
+            .range([0, comparisonWidth]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(allValues, d => d.posts) ?? 0])
+            .nice()
+            .range([comparisonHeight, 0]);
+
+        const line = d3.line()
+            .defined(d => Number.isFinite(d.posts))
             .x(d => x(d.date))
-            .y0(height)
-            .y1(d => y(d.cases));
-    };
+            .y(d => y(d.posts));
 
-    const chart = redditsvg.append('g');
-    let sentimentBreakdownActive = false;
+        chart.append("g")
+            .attr("transform", `translate(0,${comparisonHeight})`)
+            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")))
+            .selectAll("text")
+            .style("font-size", "9px")
+            .attr("transform", "rotate(-45)")
+            .attr("text-anchor", "end");
 
-    const resetTrendlines = () => {
-        sentimentBreakdownActive = false;
-        chart.selectAll(".sentiment-breakdown").remove();
-        chart.selectAll(".sub-trendlines")
-            .attr("display", null);
-        hideTooltip();
-    };
+        chart.append("g")
+            .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")));
 
-    chart.append("rect")
-        .attr("class", "chart-click-reset")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", width)
-        .attr("height", height)
-        .attr("fill", "transparent")
-        .on("click", resetTrendlines);
+        chart.append("text")
+            .attr("x", -comparisonHeight / 2)
+            .attr("y", -54)
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("fill", "#555")
+            .text("Posts per quarter");
 
-    // draw cases
-    chart.append("path")
-            .datum(visibleCasesData)
-            .attr("class", "cases-area")
-            .attr("opacity", 1)
-            .attr("fill", "#9cc7ff")
-            .attr("stroke", "#c2dcff")
-            .attr("stroke-opacity", 0.8)
-            .style("stroke-width", "0.5px")
-            .attr("d", createArea());
+        const seriesGroups = chart.selectAll(".control-comparison-line")
+            .data(comparisonSeries)
+            .enter()
+            .append("g")
+            .attr("class", "control-comparison-line");
 
-    chart.selectAll(".event-line")
-            .data(visibleEventData)
-            .join("line")
-            .attr("class", "event-line")
-            .attr("x1", d => x(d.date))
-            .attr("x2", d => x(d.date))
-            .attr("y1", 0)
-            .attr("y2", height)
-            .attr("stroke", "#002c66")
-            .attr("stroke-width", "2px")
-            .attr("opacity", 0.3);
+        seriesGroups.append("path")
+            .attr("fill", "none")
+            .attr("stroke", d => d.color)
+            .attr("stroke-width", d => d.strokeWidth)
+            .attr("d", d => line(d.values));
 
-    const eventLabels = chart.selectAll(".event-label")
-            .data(visibleEventData)
-            .join("g")
-            .attr("class", "event-label")
-            .attr("transform", (d) => {
-                return `translate(${x(d.date)})`;
+        seriesGroups.selectAll(".comparison-hover-point")
+            .data(d => d.values.map(v => ({ ...v, label: d.label, color: d.color })))
+            .enter()
+            .append("circle")
+            .attr("class", "comparison-hover-point")
+            .attr("cx", d => x(d.date))
+            .attr("cy", d => y(d.posts))
+            .attr("r", 4)
+            .attr("fill", d => d.color)
+            .attr("opacity", 0)
+            .on("mouseenter", function() {
+                d3.select(this).attr("opacity", 1);
+            })
+            .on("mousemove", (event, d) => {
+                showTooltip(event, `
+                    <strong>${d.label}</strong><br>
+                    Quarter: ${quarterLabel(d.date)}<br>
+                    Posts: ${formatComma(d.posts)}
+                `);
+            })
+            .on("mouseleave", function() {
+                d3.select(this).attr("opacity", 0);
+                hideTooltip();
             });
 
-    eventLabels.append("rect")
-            .attr("x", -40)
-            .attr("y", -40)
-            .attr("width", 80)
-            .attr("height", 40)
-            .attr("fill", "white")
-            .attr("stroke", "#002c66")
-            .attr("stroke-width", 1);
+        const comparisonLabelGap = 15;
+        const comparisonLabels = comparisonSeries.map(series => {
+            const value = [...series.values].reverse().find(d => Number.isFinite(d.posts));
+            return value
+                ? {
+                    ...series,
+                    value,
+                    desiredY: y(value.posts) + 4
+                }
+                : null;
+        }).filter(Boolean)
+            .sort((a, b) => a.desiredY - b.desiredY);
 
-    eventLabels.append("text")
-            .attr("x", 0)
-            .attr("y", -30)
-            .attr("text-anchor", "middle")
-            .style("font-size", "8px")
-            .style("fill", "#002c66")
-            .text(d => d.event)
-            .call(wrapText, 60);
+        comparisonLabels.forEach((label, index) => {
+            label.labelY = index === 0
+                ? Math.max(10, label.desiredY)
+                : Math.max(label.desiredY, comparisonLabels[index - 1].labelY + comparisonLabelGap);
+        });
 
-    eventLabels.append("title")
-            .text(d => d.event);
+        for (let index = comparisonLabels.length - 1; index >= 0; index -= 1) {
+            const maxY = index === comparisonLabels.length - 1
+                ? comparisonHeight - 6
+                : comparisonLabels[index + 1].labelY - comparisonLabelGap;
+            comparisonLabels[index].labelY = Math.min(comparisonLabels[index].labelY, maxY);
+        }
 
-    // draw trendlines
-
-    const line = d3.line()
-        .x(d => x(d.date))
-        .y(d => yPosts(d.numbOfPosts));
-
-    const trendlines = chart.selectAll(".sub-trendlines")
-        .data(sentimentPostPerDay)
-        .enter()
-        .append("g")
-        .attr("class", "sub-trendlines");
-
-    const drawSentimentBreakdown = selectedSubreddit => {
-        sentimentBreakdownActive = true;
-        chart.selectAll(".sentiment-breakdown").remove();
-
-        chart.selectAll(".sub-trendlines")
-            .attr("display", d => d.sub === selectedSubreddit.sub ? null : "none");
-
-        const breakdown = chart.append("g")
-            .attr("class", "sentiment-breakdown");
-
-        const showSentimentTooltip = (event, d, sentimentType) => {
-            const caseCount = casesByDate.get(+d.date) ?? 0;
-            showTooltip(event, `
-                <strong>Subreddit: r/${selectedSubreddit.sub}</strong><br>
-                Date: ${formatDate(d.date)}<br>
-                Total Posts: ${formatComma(d.numbOfPosts)}<br>
-                Positive: ${d3.format(".0%")(d.positivePercent)}<br>
-                Negative: ${d3.format(".0%")(d.negativePercent)}<br>
-                New COVID Cases: ${formatComma(caseCount)}<br>
-            `);
-        };
-
-        breakdown.selectAll(".positive-sentiment-bar")
-            .data(selectedSubreddit.values)
-            .join("rect")
-            .attr("class", "positive-sentiment-bar")
-            .attr("x", d => x(d.date) - 4)
-            .attr("y", d => yPosts(d.numbOfPosts) - sentimentBarHeight(d.positivePercent))
-            .attr("rx", 2)
-            .attr("width", 9)
-            .attr("height", d => sentimentBarHeight(d.positivePercent))
-            .attr("fill", "#d62728")
-            .attr("opacity", 0.8)
-            .on("mousemove", (event, d) => {
-                showSentimentTooltip(event, d, "Positive sentiment");
-            })
-            .on("mouseleave", hideTooltip);
-
-        breakdown.selectAll(".negative-sentiment-bar")
-            .data(selectedSubreddit.values)
-            .join("rect")
-            .attr("class", "negative-sentiment-bar")
-            .attr("x", d => x(d.date) - 4)
-            .attr("y", d => yPosts(d.numbOfPosts))
-            .attr("rx", 2)
-            .attr("width", 9)
-            .attr("height", d => sentimentBarHeight(d.negativePercent))
-            .attr("fill", "#1f77b4")
-            .attr("opacity", 0.8)
-            .on("mousemove", (event, d) => {
-                showSentimentTooltip(event, d, "Negative sentiment");
-            })
-            .on("mouseleave", hideTooltip);
+        chart.selectAll(".comparison-end-label")
+            .data(comparisonLabels)
+            .enter()
+            .append("text")
+            .attr("class", "comparison-end-label")
+            .attr("x", d => x(d.value.date) + 8)
+            .attr("y", d => d.labelY)
+            .attr("fill", d => d.color)
+            .style("font-size", "12px")
+            .style("font-weight", "700")
+            .text(d => d.label);
     };
 
-    trendlines.append("path")
-        .attr("class", "trendline")
-        .attr("fill", "none")
-        .attr("stroke", d => subColor(d.sub))
-        .attr("stroke-width", 2.5)
-        .attr("d", d => line(d.values))
-        .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            event.stopPropagation();
-            drawSentimentBreakdown(d);
-        });
+    const getYearRange = year => {
+        if (year == null) {
+            return fullDateRange;
+        }
+        const start = new Date(year, 0, 1);
+        const end = new Date(year, 11, 31, 23, 59, 59, 999);
+        return [
+            start < fullDateRange[0] ? fullDateRange[0] : start,
+            end > fullDateRange[1] ? fullDateRange[1] : end
+        ];
+    };
 
-    trendlines.selectAll(".trendline-hover-point")
-        .data(d => d.values.map(v => ({ ...v, sub: d.sub })))
-        .enter()
-        .append("circle")
-        .attr("class", "trendline-hover-point")
-        .attr("cx", d => x(d.date))
-        .attr("cy", d => yPosts(d.numbOfPosts))
-        .attr("r", 5)
-        .attr("fill", d => subColor(d.sub))
-        .attr("opacity", 0)
-        .on("click", (event, d) => {
-            event.stopPropagation();
-            const selectedSubreddit = sentimentPostPerDay.find(s => s.sub === d.sub);
-            drawSentimentBreakdown(selectedSubreddit);
-        })
-        .on("mousemove", (event, d) => {
-            if (sentimentBreakdownActive) {
-                return;
-            }
+    const drawActivityChart = ({ group, title, metric, selectedYear, setYear, xOffset }) => {
+        const chart = group.append("g")
+            .attr("transform", `translate(${xOffset},0)`);
+        const dateRange = getYearRange(selectedYear);
+        const visibleSeries = activityBySubreddit.map(series => ({
+            sub: series.sub,
+            values: series.values.filter(d => d.date >= dateRange[0] && d.date <= dateRange[1])
+        }));
+        const maxValue = d3.max(visibleSeries, d => d3.max(d.values, v => v[metric])) ?? 0;
 
-            const caseCount = casesByDate.get(+d.date) ?? 0;
-            showTooltip(event, `
-                <strong>Subreddit: r/${d.sub}</strong><br>
-                Date: ${formatDate(d.date)}<br>
-                Total Posts: ${formatComma(d.numbOfPosts)}<br>
-                New COVID Cases: ${formatComma(caseCount)}
-            `);
-        })
-        .on("mouseenter", function() {
-            d3.select(this).attr("opacity", 1);
-        })
-        .on("mouseleave", function() {
-            d3.select(this).attr("opacity", 0);
-            if (!sentimentBreakdownActive) {
+        const x = d3.scaleTime()
+            .domain(dateRange)
+            .range([0, panelWidth]);
+
+        const y = d3.scaleLinear()
+            .domain([0, maxValue])
+            .nice()
+            .range([panelHeight, 0]);
+
+        const line = d3.line()
+            .defined(d => Number.isFinite(d[metric]))
+            .x(d => x(d.date))
+            .y(d => y(d[metric]));
+
+        chart.append("text")
+            .attr("x", panelWidth / 2)
+            .attr("y", -18)
+            .attr("text-anchor", "middle")
+            .style("font-size", "14px")
+            .style("font-weight", "700")
+            .style("fill", "#333")
+            .text(selectedYear == null ? title : `${title} (${selectedYear})`);
+
+        chart.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", panelWidth)
+            .attr("height", panelHeight)
+            .attr("fill", "transparent")
+            .on("click", () => {
+                setYear(null);
                 hideTooltip();
-            }
+                createRedVis();
+            });
+
+        const xAxis = d3.axisBottom(x)
+            .ticks(selectedYear == null ? d3.timeYear.every(1) : d3.timeMonth.every(3))
+            .tickFormat(selectedYear == null ? d3.timeFormat("%Y") : d => `Q${Math.floor(d.getMonth() / 3) + 1}`);
+
+        const xAxisGroup = chart.append("g")
+            .attr("transform", `translate(0,${panelHeight})`)
+            .call(xAxis);
+
+        if (selectedYear == null) {
+            xAxisGroup.selectAll(".tick")
+                .style("cursor", "pointer")
+                .on("click", (event, date) => {
+                    event.stopPropagation();
+                    setYear(date.getFullYear());
+                    hideTooltip();
+                    createRedVis();
+                });
+
+            xAxisGroup.selectAll("text")
+                .style("font-size", "9px")
+                .attr("transform", "rotate(-45)")
+                .attr("text-anchor", "end");
+        } else {
+            chart.append("text")
+                .attr("x", panelWidth)
+                .attr("y", -18)
+                .attr("text-anchor", "end")
+                .style("font-size", "11px")
+                .style("fill", "#555")
+                .style("cursor", "pointer")
+                .text("Reset")
+                .on("click", event => {
+                    event.stopPropagation();
+                    setYear(null);
+                    hideTooltip();
+                    createRedVis();
+                });
+        }
+
+        chart.append("g")
+            .call(d3.axisLeft(y).ticks(6));
+
+        chart.append("text")
+            .attr("x", -panelHeight / 2)
+            .attr("y", -44)
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("fill", "#555")
+            .text("Posts per quarter");
+
+        const trendlines = chart.selectAll(".sub-trendlines")
+            .data(visibleSeries)
+            .enter()
+            .append("g")
+            .attr("class", "sub-trendlines");
+
+        trendlines.append("path")
+            .attr("class", "trendline")
+            .attr("fill", "none")
+            .attr("stroke", d => subredditColor(d.sub))
+            .attr("stroke-width", d => subredditStrokeWidth(d.sub))
+            .attr("d", d => line(d.values));
+
+        trendlines.selectAll(".trendline-hover-point")
+            .data(d => d.values.map(v => ({ ...v, sub: d.sub })))
+            .enter()
+            .append("circle")
+            .attr("class", "trendline-hover-point")
+            .attr("cx", d => x(d.date))
+            .attr("cy", d => y(d[metric]))
+            .attr("r", d => r_main_subs.includes(d.sub) ? (selectedYear == null ? 4 : 6) : (selectedYear == null ? 3 : 5))
+            .attr("fill", d => subredditColor(d.sub))
+            .attr("opacity", 0)
+            .on("mouseenter", function(event, d) {
+                chart.selectAll(".sub-trendlines")
+                    .attr("opacity", lineGroup => lineGroup.sub === d.sub ? 1 : 0.15);
+                d3.select(this).attr("opacity", 1);
+            })
+            .on("mousemove", (event, d) => {
+                showTooltip(event, `
+                    <strong>Subreddit: r/${d.sub}</strong><br>
+                    Quarter: ${quarterLabel(d.date)}<br>
+                    Posts: ${formatComma(d[metric])}
+                `);
+            })
+            .on("mouseleave", function() {
+                chart.selectAll(".sub-trendlines")
+                    .attr("opacity", 1);
+                d3.select(this).attr("opacity", 0);
+                hideTooltip();
+            });
+
+        const lineLabelGap = selectedYear == null ? 13 : 16;
+        const lineLabels = visibleSeries.map(series => {
+            const value = [...series.values].reverse().find(d => Number.isFinite(d[metric]));
+            return value
+                ? {
+                    sub: series.sub,
+                    value,
+                    desiredY: y(value[metric]) + 3
+                }
+                : null;
+        }).filter(Boolean)
+            .sort((a, b) => a.desiredY - b.desiredY);
+
+        lineLabels.forEach((label, index) => {
+            label.labelY = index === 0
+                ? Math.max(10, label.desiredY)
+                : Math.max(label.desiredY, lineLabels[index - 1].labelY + lineLabelGap);
         });
 
+        for (let index = lineLabels.length - 1; index >= 0; index -= 1) {
+            const maxY = index === lineLabels.length - 1
+                ? panelHeight - 6
+                : lineLabels[index + 1].labelY - lineLabelGap;
+            lineLabels[index].labelY = Math.min(lineLabels[index].labelY, maxY);
+        }
 
-    chart.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x));
+        chart.selectAll(".line-end-label")
+            .data(lineLabels)
+            .enter()
+            .append("text")
+            .attr("class", "line-end-label")
+            .attr("x", d => x(d.value.date) + 8)
+            .attr("y", d => d.labelY)
+            .attr("fill", d => subredditColor(d.sub))
+            .style("font-size", d => r_main_subs.includes(d.sub) ? "13px" : "10px")
+            .style("font-weight", d => r_main_subs.includes(d.sub) ? "700" : "500")
+            .text(d => `r/${d.sub}`);
 
-    chart.append("g")
-        .call(d3.axisLeft(y));
+        if (selectedYear == null) {
+            chart.append("text")
+                .attr("x", panelWidth / 2)
+                .attr("y", panelHeight + 48)
+                .attr("text-anchor", "middle")
+                .style("font-size", "10px")
+                .style("fill", "#666")
+                .text("Click a year to zoom");
+        }
+    };
 
+    const drawContributionChart = series => {
+        const container = d3.select("#reddit-contribution-vis");
+        container.selectAll("*").remove();
 
+        if (!series.length) {
+            container.append("p")
+                .style("color", "#666")
+                .text("Select at least one subreddit to show quarterly contribution.");
+            return;
+        }
 
-    // TODO: Implement the Reddit visualization
+        const allQuarterDates = Array.from(new Set(
+            series.flatMap(subredditSeries => subredditSeries.values.map(d => +d.date))
+        )).sort((a, b) => a - b).map(d => new Date(d));
+
+        const orderedSeries = [
+            ...series.filter(d => !r_main_subs.includes(d.sub)),
+            ...series.filter(d => r_main_subs.includes(d.sub))
+        ];
+
+        const contributionRows = allQuarterDates.map(date => {
+            const parts = orderedSeries.map(subredditSeries => {
+                const quarterValue = subredditSeries.values.find(d => +d.date === +date);
+                return {
+                    sub: subredditSeries.sub,
+                    posts: quarterValue?.posts ?? 0
+                };
+            });
+            const total = d3.sum(parts, d => d.posts);
+            let runningPercent = 0;
+
+            return {
+                date,
+                total,
+                parts: parts.map(part => {
+                    const percent = total ? part.posts / total : 0;
+                    const stackedPart = {
+                        ...part,
+                        percent,
+                        y0: runningPercent,
+                        y1: runningPercent + percent
+                    };
+                    runningPercent += percent;
+                    return stackedPart;
+                })
+            };
+        });
+
+        const contributionMargin = { top: 40, right: 42, bottom: 60, left: 64 };
+        const contributionWidth = redditSvgWidth - contributionMargin.left - contributionMargin.right;
+        const contributionHeight = redditSvgHeight - contributionMargin.top - contributionMargin.bottom;
+        const contributionSvgWidth = redditSvgWidth;
+        const contributionSvgHeight = redditSvgHeight;
+
+        const svg = container.append("svg")
+            .attr("width", contributionSvgWidth)
+            .attr("height", contributionSvgHeight)
+            .attr("viewBox", `0 0 ${contributionSvgWidth} ${contributionSvgHeight}`);
+
+        const chart = svg.append("g")
+            .attr("transform", `translate(${contributionMargin.left},${contributionMargin.top})`);
+
+        const x = d3.scaleTime()
+            .domain(fullDateRange)
+            .range([0, contributionWidth]);
+
+        const y = d3.scaleLinear()
+            .domain([0, 1])
+            .range([contributionHeight, 0]);
+
+        const quarterStep = contributionRows.length > 1
+            ? x(contributionRows[1].date) - x(contributionRows[0].date)
+            : contributionWidth;
+        const barWidth = Math.max(3, quarterStep * 0.72);
+
+        chart.append("g")
+            .attr("class", "contribution-grid")
+            .call(d3.axisLeft(y)
+                .ticks(5)
+                .tickSize(-contributionWidth)
+                .tickFormat(""))
+            .selectAll("line")
+            .attr("stroke", "#ffffff")
+            .attr("stroke-width", 1.2);
+
+        chart.select(".contribution-grid .domain").remove();
+
+        chart.append("g")
+            .attr("transform", `translate(0,${contributionHeight})`)
+            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")))
+            .selectAll("text")
+            .style("font-size", "9px")
+            .attr("transform", "rotate(-45)")
+            .attr("text-anchor", "end");
+
+        chart.append("g")
+            .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll("line").remove());
+
+        const quarters = chart.selectAll(".quarter-contribution-bar")
+            .data(contributionRows)
+            .enter()
+            .append("g")
+            .attr("class", "quarter-contribution-bar")
+            .attr("transform", d => `translate(${x(d.date) - barWidth / 2},0)`);
+
+        quarters.selectAll("rect")
+            .data(d => d.parts.map(part => ({ ...part, date: d.date, total: d.total })))
+            .enter()
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", d => y(d.y1))
+            .attr("width", barWidth)
+            .attr("height", d => Math.max(0, y(d.y0) - y(d.y1)))
+            .attr("rx", d => 2)
+            .attr("ry", d => 2)
+            .attr("fill", d => subredditColor(d.sub))
+            .attr("opacity", d => d.posts > 0 ? (r_main_subs.includes(d.sub) ? 0.98 : 0.82) : 0)
+            .on("mousemove", (event, d) => {
+                showTooltip(event, `
+                    <strong>Subreddit: r/${d.sub}</strong><br>
+                    Quarter: ${quarterLabel(d.date)}<br>
+                    Posts: ${formatComma(d.posts)}<br>
+                    Share: ${d3.format(".1%")(d.percent)}<br>
+                    Selected total: ${formatComma(d.total)}
+                `);
+            })
+            .on("mouseleave", hideTooltip);
+
+        chart.selectAll(".quarter-total-label")
+            .data(contributionRows.filter(d => d.date.getMonth() === 0))
+            .enter()
+            .append("text")
+            .attr("class", "quarter-total-label")
+            .attr("x", d => x(d.date))
+            .attr("y", -12)
+            .attr("text-anchor", "middle")
+            .style("font-size", "10px")
+            .style("font-weight", "700")
+            .style("fill", "#111")
+            .text(d => d3.format(".2s")(d.total));
+
+        chart.append("text")
+            .attr("x", -contributionHeight / 2)
+            .attr("y", -46)
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("fill", "#555")
+            .text("Share of posts");
+    };
+
+    const panelGroup = redditsvg.append("g");
+
+    drawControlComparisonChart();
+
+    drawActivityChart({
+        group: panelGroup,
+        title: "Posts",
+        metric: "posts",
+        selectedYear: r_postChartYear,
+        setYear: year => { r_postChartYear = year; },
+        xOffset: 0
+    });
+
+    drawContributionChart(activityBySubreddit);
+
     console.log('createRedVis called');
 }
 
@@ -815,9 +1167,9 @@ const mapsvg = d3.select('#map-vis')
 // Create reddit SVG
 const redditsvg = d3.select('#reddit-vis')
     .append('svg')
-    .attr('width', svgWidth)
-    .attr('height', svgHeight)
-    .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
+    .attr('width', redditSvgWidth)
+    .attr('height', redditSvgHeight)
+    .attr('viewBox', `0 0 ${redditSvgWidth} ${redditSvgHeight}`)
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
