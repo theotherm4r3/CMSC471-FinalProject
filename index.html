@@ -7,42 +7,34 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-        <div class="header-container">
-            <h1>Final Project</h1>
-            <p id="header-subheader">
-                Description bblah blaha blah
-            </p>
-        </div>
+    <div class="header-container">
+        <h1>The Mental Health Lifestyle</h1>
+        <p id="header-subheader">
+            A Retrospective on Recent Mental Health Trends in the U.S.
+        </p>
+        <p id="header-subheader" style="font-size: 14px">
+            By Alice Zhu, Margaret Kato, and Phani Kuppa
+        </p>
+    </div>
+
+    <div class="container">
+        <p> 
+            According to the CDC, the United States is in a <b>mental health crisis</b>. 
+            The <a href="https://www.nami.org/mental-health-by-the-numbers/">U.S. 2024 National Survey on Drug Use and Health</a> revealed worrying statistics: 
+            more than <b>1 in 5 U.S. adults</b> experience mental illness each year, and <b>suicide is the 2nd leading cause of death</b>
+            among people ages 10-24. Was this always an issue? What factors are influencing mental health,
+            and who is most affected? 
+        </p>
+        <button type="button" id="begin-story" class="begin-story">CLICK HERE TO LEARN MORE</button>
+    </div>
 
     <div class="container"> <!-- Centers content and sets max width -->
 
-        <div class="sub-container">
-            <h2>Depression affects 10-35% of the US population. </h2>
-            <p class="subheader">
-                Crude prevalence of depression in adults (>18 years) by county.
-            </p>
-            <div id="year-controls">
-            <label>
-                <input type="radio" name="year" value="2020" checked> 2020
-            </label>
-
-            <label>
-                <input type="radio" name="year" value="2021"> 2021
-            </label>
-
-            <label>
-                <input type="radio" name="year" value="2023"> 2023
-            </label>
-            </div>
-            <div id="map-vis"></div> <!--  Will hold map vis  -->
-            <p class="caption">
-                Data from the <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>.
-            </p>
-        </div>
-
+        <div id="viz-block-reddit" class="story-hidden">
         <div class="sub-container section2-container">
             <div class="section2-title-section">
-                <h2>Depression on Social Media: a trend over 15 years</h2>
+                <h2>First, let's survey the general population through the database of all human experience: Reddit.</h2>
+                <p class="subheader">These are some of the most popular subreddits over the past 15 years.</p>
             </div>
             <div id="section2-scrolly">
                 <div id="section2-stage">
@@ -72,15 +64,63 @@
                     <p id="section2-desc-body">
                                 Quarterly post totals for all selected mental-health subreddits combined versus general-interest control subreddits.
                             </p>
+                            <p id="section2-desc-emphasis" class="section2-desc-emphasis"></p>
                         </div>
                     </aside>
                 </div>
             </div>
-            <p class="caption">
-                Source of Data: Watchful1. (2026). Subreddit comments/submissions 2005-06 to 2025-12 [Data set]. Academic Torrents. https://academictorrents.com/details/3e3f64dee22dc304cdd2546254ca1f8e8ae542b4 
+            <div class="caption-div">
+                <p class="caption">
+                    Source of Data: Watchful1. (2026). Subreddit comments/submissions 2005-06 to 2025-12 [Data set]. Academic Torrents. https://academictorrents.com/details/3e3f64dee22dc304cdd2546254ca1f8e8ae542b4 
+                </p>
+            </div>
+        </div>
+        <div class="container story-after-viz">
+            <p>
+                The history of mental health subreddits give us a clear picture of <b>when</b> and <b>how</b> mental health conversations in the U.S. have changed -- now, let's look at <b>where</b> the biggest mental health issue, depression, is occuring. 
             </p>
+            <button type="button" id="reveal-map-viz" class="story-continue-btn">VIEW DEPRESSION RATES ACROSS THE U.S.</button>
+        </div>
         </div>
 
+        <div id="viz-block-map" class="story-hidden">
+        <div class="sub-container">
+            <h2>The proportion of counties with >25% prevalence of depression in adults increased from 12.5% to 29.3% from 2021 to 2024.</h2>
+            <p class="subheader">
+                 States such as <b>Washington</b>, <b>Oregon</b>, <b>Louisiana</b>, <b>Tennessee</b>, <b>Kentucky</b>, and <b>West Virginia</b> appear to be hotspots for depression, although the prevalence of depression </b>increased in many states</b> over the past few years.
+            </p>
+            <div id="year-controls">
+            <label>
+                <input type="radio" name="year" value="2020" checked> 2020
+            </label>
+
+            <label>
+                <input type="radio" name="year" value="2021"> 2021
+            </label>
+
+            <label>
+                <input type="radio" name="year" value="2023"> 2023
+            </label>
+            </div>
+            <div id="map-vis"></div> <!--  Will hold map vis  -->
+            <div class="caption-div">
+                <p class="caption">
+                    Source of Data: <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>.
+                </p>
+                <p class="caption">
+                Counties without data are shown in <b>gray</b>.
+                </p>
+            </div>
+        </div>
+        <div class="container story-after-viz">
+            <p>
+                This map highlights <b>where</b> depression is an issue: although certain areas consistently have higher rates, the increase in depression appears to be occurring nationwide. Now, let's look at <b>who</b> is affected most and <b>why</b>. 
+            </p>
+            <button type="button" id="reveal-story-viz" class="story-continue-btn">CONTINUE TO DEMOGRAPHIC EXPLORATION</button>
+        </div>
+        </div>
+
+        <div id="viz-block-story" class="story-hidden">
         <div class="sub-container story-chapter">
             <h2>Small signals, big patterns</h2>
             <p class="subheader">
@@ -95,18 +135,20 @@
             <p class="caption">
                 Demographic Analysis: Mean depression risk scores among respondents with valid assessments, stratified by self-reported gender. Analysis conducted on unweighted sample; results are not representative of national estimates.
             </p>
-            <div id="story-bridge" class="story-bridge story-hidden" aria-live="polite">
-                <p class="story-narrative">
-                    Following the demographic analysis, the investigation expands to examine age-related patterns. The next analysis segment evaluates how depression burden varies across different life stages within the same NHANES dataset, providing insights into age-stratified mental health outcomes.
-                </p>
-                <button type="button" id="story-continue-age" class="story-continue-btn">Continue to age group analysis</button>
-            </div>
-            <div id="story-age-section" class="story-age-section story-hidden">
-                <div id="story-age-vis"></div>
-                <p class="caption">
-                    Analysis of respondents aged 18+ with valid depression risk assessments, categorized into age bands (years). Utilizes identical scoring methodology as demographic comparison.
-                </p>
-            </div>
+        </div>
+        <div id="story-bridge" class="container story-bridge story-hidden" aria-live="polite">
+            <p class="story-narrative">
+                Following the demographic analysis, the investigation expands to examine age-related patterns. The next analysis segment evaluates how depression burden varies across different life stages within the same NHANES dataset, providing insights into age-stratified mental health outcomes.
+            </p>
+            <button type="button" id="story-continue-age" class="story-continue-btn">Continue to age group analysis</button>
+        </div>
+        <div id="story-age-section" class="story-age-section story-hidden sub-container">
+            <div id="story-age-vis"></div>
+            <p class="caption">
+                Analysis of respondents aged 18+ with valid depression risk assessments, categorized into age bands (years). Utilizes identical scoring methodology as demographic comparison.
+            </p>
+        </div>
+
         </div>
 
         <div id="tooltip" style="display:none"></div>

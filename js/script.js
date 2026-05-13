@@ -206,23 +206,27 @@ function setupSection2ScrollReveal() {
     const nextButton = document.querySelector("#section2-next");
     const descTitle = document.querySelector("#section2-desc-title");
     const descBody = document.querySelector("#section2-desc-body");
-    if (!scrolly || !stage || !compareScene || !postScene || !shareScene || !progressFill || !backButton || !nextButton || !descTitle || !descBody) {
+    const descEmphasis = document.querySelector("#section2-desc-emphasis");
+    if (!scrolly || !stage || !compareScene || !postScene || !shareScene || !progressFill || !backButton || !nextButton || !descTitle || !descBody || !descEmphasis) {
         return;
     }
 
     const scenes = [compareScene, postScene, shareScene];
     const sceneCopy = [
         {
-            title: "The Steady Growth of Mental Health Related Communities",
-            body: "lorem ipsum"
+            title: "Mental Health Related Communities Have Grown Steadily Since 2011",
+            body: "While general-interest subreddits started off more popular than mental health subreddits from 2011-2015, mental health subreddits have steadily increased in activity, indicating a growing number of people seeking help and support.",
+            bold: "Click Next to examine the breakdown of mental health-related subreddits."
         },
         {
-            title: "The Domination of Depression Related Communities",
-            body: "lorem ipsum"
+            title: "Depression-Related Communities Have Dominated Mental Health Subreddits.",
+            body: "r/suicidewatch, r/depression, and r/lonely have consistently been the most active mental health subreddits, indicating a high demand for support and discussion in these areas.",
+            bold: "Click Next to examine the proportional activity of these subreddits."
         },
         {
-            title: "The Breakdown of the Domination",
-            body: "lorem ipsum"
+            title: "Other Mental Health-Related Communities Have Also Grown.",
+            body: "While the raw number of posts in depression-related subreddits has dominated Reddit since its inception, other mental health subreddits have been catching up, occupying more than 50% of the mental health-related posts since 2022.",
+            bold: "However, depression is clearly still a dominant topic in the mental health landscape."
         }
     ];
     let activeIndex = 0;
@@ -237,6 +241,7 @@ function setupSection2ScrollReveal() {
         const copy = sceneCopy[activeIndex];
         descTitle.textContent = copy.title;
         descBody.textContent = copy.body;
+        descEmphasis.textContent = copy.bold ?? "";
         backButton.disabled = activeIndex === 0;
         nextButton.disabled = activeIndex === scenes.length - 1;
         progressFill.style.width = `${((activeIndex + 1) / scenes.length) * 100}%`;
@@ -248,8 +253,34 @@ function setupSection2ScrollReveal() {
     section2RevealObserverInitialized = true;
 }
 
+function setupVizRevealFlow() {
+    const beginBtn = document.getElementById("begin-story");
+    const redditWrap = document.getElementById("viz-block-reddit");
+    const mapWrap = document.getElementById("viz-block-map");
+    const storyWrap = document.getElementById("viz-block-story");
+    const revealMapBtn = document.getElementById("reveal-map-viz");
+    const revealStoryBtn = document.getElementById("reveal-story-viz");
+    if (!beginBtn || !redditWrap || !mapWrap || !storyWrap || !revealMapBtn || !revealStoryBtn) {
+        return;
+    }
+
+    beginBtn.addEventListener("click", () => {
+        redditWrap.classList.remove("story-hidden");
+        redditWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    revealMapBtn.addEventListener("click", () => {
+        mapWrap.classList.remove("story-hidden");
+        mapWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    revealStoryBtn.addEventListener("click", () => {
+        storyWrap.classList.remove("story-hidden");
+        storyWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+}
+
 //load data after page is loaded
 function init(){
+    setupVizRevealFlow();
 
     d3.csv("./data/PLACES_Data_Depression.csv", function(d){
         return {
@@ -544,7 +575,8 @@ function updateMap() {
 
     mapsvg.selectAll("path.county")
         .transition()
-        .duration(10)
+        .duration(500)
+        .ease(d3.easeCubicOut)
         .attr("data-value", d => {
             const v = valuemap.get(cleanIDMap(d.id));
             return v != null ? v : "";
@@ -660,7 +692,7 @@ function createRedVis() {
             return;
         }
 
-        const comparisonMargin = { top: 40, right: 210, bottom: 60, left: 78 };
+        const comparisonMargin = { top: 40, right: 180, bottom: 60, left: 120 };
         const comparisonWidth = redditSvgWidth - comparisonMargin.left - comparisonMargin.right;
         const comparisonHeight = redditSvgHeight - comparisonMargin.top - comparisonMargin.bottom;
         const comparisonSvgHeight = redditSvgHeight;
@@ -687,24 +719,27 @@ function createRedVis() {
             .x(d => x(d.date))
             .y(d => y(d.posts));
 
-        chart.append("g")
-            .attr("transform", `translate(0,${comparisonHeight})`)
-            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")))
-            .selectAll("text")
-            .style("font-size", "9px")
-            .attr("transform", "rotate(-45)")
-            .attr("text-anchor", "end");
+       const yAxisGroup = chart.append("g")
+        .call(d3.axisLeft(y).ticks(6));
 
-        chart.append("g")
-            .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")));
+        yAxisGroup.selectAll("text")
+            .style("font-size", "16px")
+            .style("fill", "#333");
+
+        yAxisGroup.selectAll(".domain, .tick line")
+            .attr("stroke", "#444");
 
         chart.append("text")
-            .attr("x", -comparisonHeight / 2)
-            .attr("y", -54)
+            .attr("x", (-panelHeight / 2) + 10)
+
+        chart.append("text")
+            .attr("x", (-comparisonHeight / 2))
+            .attr("y", -85)
             .attr("transform", "rotate(-90)")
             .attr("text-anchor", "middle")
-            .style("font-size", "11px")
+            .style("font-size", "16px")
             .style("fill", "#555")
+            .style("font-weight", "600")
             .text("Posts per quarter");
 
         const seriesGroups = chart.selectAll(".control-comparison-line")
@@ -778,9 +813,37 @@ function createRedVis() {
             .attr("x", d => x(d.value.date) + 8)
             .attr("y", d => d.labelY)
             .attr("fill", d => d.color)
-            .style("font-size", "12px")
+            .style("font-size", "16px")
             .style("font-weight", "700")
             .text(d => d.label);
+
+        const xAxisG = chart.append("g")
+            .attr("class", "reddit-x-axis")
+            .attr("transform", `translate(0,${comparisonHeight})`)
+            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")).tickSizeOuter(6));
+        xAxisG.selectAll(".domain, .tick line").attr("stroke", "#444");
+        xAxisG.selectAll("text")
+            .style("font-size", "16px")
+            .attr("fill", "#333")
+            .attr("transform", "rotate(-45)")
+            .attr("text-anchor", "end");
+        chart.append("text")
+            .attr("class", "reddit-x-axis-label")
+            .attr("x", comparisonWidth / 2)
+            .attr("y", comparisonHeight + 70)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("fill", "#333")
+            .style("font-weight", "600")
+            .text("Year");
+        chart.append("text")
+            .attr("x", comparisonWidth / 2)
+            .attr("y", -18)
+            .attr("text-anchor", "middle")
+            .style("font-size", "25px")
+            .style("font-weight", "700")
+            .style("fill", "#333")
+            .text("Total Subreddit Posts Per Quarter, 2011-2025")
     };
 
     const getYearRange = year => {
@@ -796,8 +859,16 @@ function createRedVis() {
     };
 
     const drawActivityChart = ({ group, title, metric, selectedYear, setYear, xOffset }) => {
+        
+        const chartMargin = { top: 10, right: 10, bottom: 60, left: 70 };
+
+        const chartWidth = panelWidth - chartMargin.left - chartMargin.right;
+        const chartHeight = panelHeight - chartMargin.top - chartMargin.bottom;
+
         const chart = group.append("g")
-            .attr("transform", `translate(${xOffset},0)`);
+            .attr("transform", `translate(${xOffset + chartMargin.left},${chartMargin.top})`);
+
+
         const dateRange = getYearRange(selectedYear);
         const visibleSeries = activityBySubreddit.map(series => ({
             sub: series.sub,
@@ -807,12 +878,12 @@ function createRedVis() {
 
         const x = d3.scaleTime()
             .domain(dateRange)
-            .range([0, panelWidth]);
+            .range([0, chartWidth]);
 
         const y = d3.scaleLinear()
             .domain([0, maxValue])
             .nice()
-            .range([panelHeight, 0]);
+            .range([chartHeight, 0]);
 
         const line = d3.line()
             .defined(d => Number.isFinite(d[metric]))
@@ -820,19 +891,19 @@ function createRedVis() {
             .y(d => y(d[metric]));
 
         chart.append("text")
-            .attr("x", panelWidth / 2)
+            .attr("x", chartWidth / 2)
             .attr("y", -18)
             .attr("text-anchor", "middle")
-            .style("font-size", "14px")
+            .style("font-size", "25px")
             .style("font-weight", "700")
             .style("fill", "#333")
-            .text(selectedYear == null ? title : `${title} (${selectedYear})`);
+            .text(selectedYear == null ? "Total Mental Health-Related Subreddit Posts Per Quarter" : `${title} (${selectedYear})`);
 
         chart.append("rect")
             .attr("x", 0)
             .attr("y", 0)
-            .attr("width", panelWidth)
-            .attr("height", panelHeight)
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
             .attr("fill", "transparent")
             .on("click", () => {
                 setYear(null);
@@ -840,54 +911,23 @@ function createRedVis() {
                 createRedVis();
             });
 
-        const xAxis = d3.axisBottom(x)
-            .ticks(selectedYear == null ? d3.timeYear.every(1) : d3.timeMonth.every(3))
-            .tickFormat(selectedYear == null ? d3.timeFormat("%Y") : d => `Q${Math.floor(d.getMonth() / 3) + 1}`);
-
-        const xAxisGroup = chart.append("g")
-            .attr("transform", `translate(0,${panelHeight})`)
-            .call(xAxis);
-
-        if (selectedYear == null) {
-            xAxisGroup.selectAll(".tick")
-                .style("cursor", "pointer")
-                .on("click", (event, date) => {
-                    event.stopPropagation();
-                    setYear(date.getFullYear());
-                    hideTooltip();
-                    createRedVis();
-                });
-
-            xAxisGroup.selectAll("text")
-                .style("font-size", "9px")
-                .attr("transform", "rotate(-45)")
-                .attr("text-anchor", "end");
-        } else {
-            chart.append("text")
-                .attr("x", panelWidth)
-                .attr("y", -18)
-                .attr("text-anchor", "end")
-                .style("font-size", "11px")
-                .style("fill", "#555")
-                .style("cursor", "pointer")
-                .text("Reset")
-                .on("click", event => {
-                    event.stopPropagation();
-                    setYear(null);
-                    hideTooltip();
-                    createRedVis();
-                });
-        }
-
-        chart.append("g")
+        const yAxisGroup = chart.append("g")
             .call(d3.axisLeft(y).ticks(6));
 
+        yAxisGroup.selectAll("text")
+            .style("font-size", "16px")
+            .style("fill", "#333");
+
+        yAxisGroup.selectAll(".domain, .tick line")
+            .attr("stroke", "#444");
+
         chart.append("text")
-            .attr("x", -panelHeight / 2)
-            .attr("y", -44)
+            .attr("x", (-chartHeight / 2))
+            .attr("y", -90)
             .attr("transform", "rotate(-90)")
             .attr("text-anchor", "middle")
-            .style("font-size", "11px")
+            .style("font-size", "16px")
+            .style("font-weight", "600")
             .style("fill", "#555")
             .text("Posts per quarter");
 
@@ -967,16 +1007,73 @@ function createRedVis() {
             .attr("x", d => x(d.value.date) + 8)
             .attr("y", d => d.labelY)
             .attr("fill", d => subredditColor(d.sub))
-            .style("font-size", d => r_main_subs.includes(d.sub) ? "13px" : "10px")
+            .style("font-size", d => r_main_subs.includes(d.sub) ? "16px" : "12px")
             .style("font-weight", d => r_main_subs.includes(d.sub) ? "700" : "500")
             .text(d => `r/${d.sub}`);
 
+        const xAxis = d3.axisBottom(x)
+            .ticks(selectedYear == null ? d3.timeYear.every(1) : d3.timeMonth.every(3))
+            .tickFormat(selectedYear == null ? d3.timeFormat("%Y") : d => `Q${Math.floor(d.getMonth() / 3) + 1}`)
+            .tickSizeOuter(6);
+
+        const xAxisGroup = chart.append("g")
+            .attr("class", "reddit-x-axis")
+            .attr("transform", `translate(0,${chartHeight})`)
+            .call(xAxis);
+        xAxisGroup.selectAll(".domain, .tick line").attr("stroke", "#444");
+        xAxisGroup.selectAll("text").attr("fill", "#333");
+
+        if (selectedYear == null) {
+            xAxisGroup.selectAll(".tick")
+                .style("cursor", "pointer")
+                .on("click", (event, date) => {
+                    event.stopPropagation();
+                    setYear(date.getFullYear());
+                    hideTooltip();
+                    createRedVis();
+                });
+
+            xAxisGroup.selectAll("text")
+                .style("font-size", "16px")
+                .attr("transform", "rotate(-45)")
+                .attr("text-anchor", "end");
+        } else {
+            chart.append("text")
+                .attr("x", chartWidth)
+                .attr("y", -18)
+                .attr("text-anchor", "end")
+                .style("font-size", "16px")
+                .style("font-weight", "600")
+                .style("fill", "#555")
+                .style("cursor", "pointer")
+                .text("Reset")
+                .on("click", event => {
+                    event.stopPropagation();
+                    setYear(null);
+                    hideTooltip();
+                    createRedVis();
+                });
+            xAxisGroup.selectAll("text").style("font-size", "16px");
+        }
+
+        chart.append("text")
+            .attr("class", "reddit-x-axis-label")
+            .attr("x", chartWidth / 2)
+            .attr("y", chartHeight + 70)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "600")
+            .style("fill", "#333")
+            .text(selectedYear == null ? "Year" : "Quarter");
+
         if (selectedYear == null) {
             chart.append("text")
-                .attr("x", panelWidth / 2)
-                .attr("y", panelHeight + 48)
+                .attr("x", chartWidth / 2)
+                .attr("y", chartHeight + 110)
                 .attr("text-anchor", "middle")
-                .style("font-size", "10px")
+                .style("font-size", "16px")
+                .style("font-style", "italic")
+                .style("font-weight", "600")
                 .style("fill", "#666")
                 .text("Click a year to zoom");
         }
@@ -1069,18 +1166,15 @@ function createRedVis() {
 
         chart.select(".contribution-grid .domain").remove();
 
-        chart.append("g")
-            .attr("transform", `translate(0,${contributionHeight})`)
-            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")))
-            .selectAll("text")
-            .style("font-size", "9px")
-            .attr("transform", "rotate(-45)")
-            .attr("text-anchor", "end");
+        const yAxisGroup = chart.append("g")
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")));
 
-        chart.append("g")
-            .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")))
-            .call(g => g.select(".domain").remove())
-            .call(g => g.selectAll("line").remove());
+yAxisGroup.selectAll("text")
+    .style("font-size", "16px")
+    .style("fill", "#333");
+
+yAxisGroup.selectAll(".domain, .tick line")
+    .attr("stroke", "#444");
 
         const quarters = chart.selectAll(".quarter-contribution-bar")
             .data(contributionRows)
@@ -1112,6 +1206,26 @@ function createRedVis() {
             })
             .on("mouseleave", hideTooltip);
 
+        const contribXAxis = chart.append("g")
+            .attr("class", "reddit-x-axis")
+            .attr("transform", `translate(0,${contributionHeight})`)
+            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")).tickSizeOuter(6));
+        contribXAxis.selectAll(".domain, .tick line").attr("stroke", "#444");
+        contribXAxis.selectAll("text")
+            .style("font-size", "16px")
+            .attr("fill", "#333")
+            .attr("transform", "rotate(-45)")
+            .attr("text-anchor", "end");
+        chart.append("text")
+            .attr("class", "reddit-x-axis-label")
+            .attr("x", contributionWidth / 2)
+            .attr("y", contributionHeight + 60)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "600")
+            .style("fill", "#333")
+            .text("Year");
+
         chart.selectAll(".quarter-total-label")
             .data(contributionRows.filter(d => d.date.getMonth() === 0))
             .enter()
@@ -1120,7 +1234,7 @@ function createRedVis() {
             .attr("x", d => x(d.date))
             .attr("y", -12)
             .attr("text-anchor", "middle")
-            .style("font-size", "10px")
+            .style("font-size", "16px")
             .style("font-weight", "700")
             .style("fill", "#111")
             .text(d => d3.format(".2s")(d.total));
@@ -1130,9 +1244,19 @@ function createRedVis() {
             .attr("y", -46)
             .attr("transform", "rotate(-90)")
             .attr("text-anchor", "middle")
-            .style("font-size", "11px")
+            .style("font-size", "16px")
+            .style("font-weight", "600")
             .style("fill", "#555")
             .text("Share of posts");
+
+        chart.append("text")
+            .attr("x", contributionWidth / 2)
+            .attr("y", -40)
+            .attr("text-anchor", "middle")
+            .style("font-size", "25px")
+            .style("font-weight", "700")
+            .style("fill", "#333")
+            .text("Proportions of Mental Health Subreddit Posts, 2011-2025")
     };
 
     const panelGroup = redditsvg.append("g");
@@ -1572,20 +1696,20 @@ function createDepressionAgeVis() {
             .attr("transform", `translate(0,${chartInnerH})`)
             .call(xAxis)
             .selectAll("text")
-            .style("font-size", "15px")
+            .style("font-size", "16px")
             .style("fill", "#222");
 
         chart.append("g")
             .call(d3.axisLeft(y).ticks(6))
             .selectAll("text")
-            .style("font-size", "13px");
+            .style("font-size", "16px");
 
         chart.append("text")
             .attr("transform", "rotate(-90)")
             .attr("x", -chartInnerH / 2)
             .attr("y", -44)
             .attr("text-anchor", "middle")
-            .style("font-size", "15px")
+            .style("font-size", "16px")
             .style("fill", "#333")
             .text("Mean depression risk #");
     });
