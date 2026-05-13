@@ -1287,14 +1287,22 @@ function createDepressionGenderVis() {
         }
 
         loadNhanesForStory().then(rows => {
-            const genderRows = rows.filter(r => r.gender === 1 || r.gender === 2);
-            const byG = d3.rollup(genderRows, v => ({
-                mean: d3.mean(v, r => r.depressionRisk),
-                n: v.length
-            }), r => r.gender);
+            const genderRows = rows.filter(r => (r.Gender === 1.0 || r.Gender === 2.0) && r.Full_sample_2_year_MEC_exam_weight > 0);
 
-            const women = byG.get(2) ?? { mean: 0, n: 0 };
-            const men = byG.get(1) ?? { mean: 0, n: 0 };
+            const byG = d3.rollup(genderRows, v => {
+                const totalWeightedScore = d3.sum(v, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
+                const totalWeights = d3.sum(v, r => r.Full_sample_2_year_MEC_exam_weight);
+                return {
+                    mean: totalWeights > 0 ? totalWeightedScore / totalWeights : 0,
+                    n: v.length,
+                    popEstimate: totalWeights
+                };
+            }, r => r.Gender);
+            console.log("Map Keys:", Array.from(byG.keys()));
+            console.log("Map Data:", byG);
+
+            const women = byG.get(2) || byG.get("2") || { mean: 0, n: 0, popEstimate: 0 };
+            const men = byG.get(1) || byG.get("1") || { mean: 0, n: 0, popEstimate: 0 };
             const yMax = Math.max(3, women.mean, men.mean) * 1.08;
 
             const yScale = d3.scaleLinear()
@@ -1302,8 +1310,8 @@ function createDepressionGenderVis() {
                 .range([baseline, baseline - barMaxPx]);
 
             const data = [
-                { key: "women", label: "Women", cx: leftCx, mean: women.mean, n: women.n, color: womenColor },
-                { key: "men", label: "Men", cx: rightCx, mean: men.mean, n: men.n, color: menColor }
+                { key: "women", label: "Women", cx: leftCx, mean: women.mean, n: women.n, pop: women.popEstimate, color: womenColor },
+                { key: "men", label: "Men", cx: rightCx, mean: men.mean, n: men.n, pop: men.popEstimate, color: menColor }
             ];
 
             barsG.selectAll("*").remove();
@@ -1348,9 +1356,9 @@ function createDepressionGenderVis() {
                 .attr("x", d => d.cx)
                 .attr("y", baseline + nLabelYOffset)
                 .attr("text-anchor", "middle")
-                .style("font-size", "16px")
-                .style("fill", "#444")
-                .text(d => `n = ${d3.format(",")(d.n)}`);
+                .style("font-size", "14px")
+                .style("fill", "#666")
+                .text(d => `n = ${d3.format(",")(d.n)} (Represents ~${d3.format(".2s")(d.pop)} people)`);
 
             barsG.append("line")
                 .attr("x1", 0)
