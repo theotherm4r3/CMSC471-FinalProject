@@ -16,3 +16,9 @@ AI was used to assist in the development of this webpage. The basic layout and f
 
 ## Extra Credit Features
 Examples here...
+
+## Data Sources
+- [https://academictorrents.com/details/3e3f64dee22dc304cdd2546254ca1f8e8ae542b4](https://academictorrents.com/details/3e3f64dee22dc304cdd2546254ca1f8e8ae542b4)
+- [https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20](https://www.cdc.gov/places/index.html)
+- [https://wwwn.cdc.gov/nchs/nhanes/](https://wwwn.cdc.gov/nchs/nhanes/)
+
