@@ -1585,6 +1585,19 @@ function setupDepressionStoryContinue() {
             sleepSection.scrollIntoView({ behavior: "smooth", block: "start" });
         });
     }
+
+    const conclusionBtn = document.getElementById("story-show-conclusion");
+    const conclusionSection = document.getElementById("story-conclusion-section");
+    if (conclusionBtn && conclusionSection) {
+        conclusionBtn.addEventListener("click", () => {
+            conclusionSection.classList.remove("story-hidden");
+
+            conclusionSection.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+    }
 }
 
 function createDepressionAgeVis() {
@@ -2021,4 +2034,13 @@ function createDepressionSleepVis() {
             .style("font-size", "12px").style("fill", "#666")
             .text(d => `n=${d3.format(",")(d.n)}`);
     });
+
+    setTimeout(() => {
+    const conclusionBridge =
+        document.getElementById("story-conclusion-bridge");
+
+    if (conclusionBridge) {
+        conclusionBridge.classList.remove("story-hidden");
+    }
+    }, 1400);
 }

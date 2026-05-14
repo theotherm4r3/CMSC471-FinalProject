@@ -10,7 +10,7 @@
     <div class="header-container">
         <h1>The Mental Health Lifestyle</h1>
         <p id="header-subheader">
-            A Retrospective on Recent Mental Health Trends in the U.S.
+            A Retrospective on Recent Mental Health Trends in the United States
         </p>
         <p id="header-subheader" style="font-size: 14px">
             By Alice Zhu, Margaret Kato, and Phani Kuppa
@@ -83,7 +83,7 @@
         </div>
         <div class="container story-after-viz">
             <p>
-                The history of mental health subreddits give us a clear picture of <b>when</b> and <b>how</b> mental health conversations in the U.S. have changed -- now, let's look at <b>where</b> the biggest mental health issue, depression, is occuring.
+                The history of mental health subreddits give us a clear picture of <b>when</b> and <b>how</b> mental health conversations in the U.S. have changed -- now, let's look at <b>where</b> the biggest mental health issue, <b>depression</b>, is occuring.
             </p>
             <button type="button" id="reveal-map-viz" class="story-continue-btn">VIEW DEPRESSION RATES ACROSS THE U.S.</button>
         </div>
@@ -91,7 +91,7 @@
 
         <div id="viz-block-map" class="story-hidden">
         <div class="sub-container">
-            <h2>The proportion of counties with >25% prevalence of depression in adults increased from 12.5% to 29.3% from 2021 to 2024.</h2>
+            <h2>The proportion of counties with more than a quarter of adults depressed increased from 12.5% to 29.3% from 2021 to 2023.</h2>
             <p class="subheader">
                  States such as <b>Washington</b>, <b>Oregon</b>, <b>Louisiana</b>, <b>Tennessee</b>, <b>Kentucky</b>, and <b>West Virginia</b> appear to be hotspots for depression, although the prevalence of depression </b>increased in many states</b> over the past few years.
             </p>
@@ -113,6 +113,9 @@
                 <p class="caption">
                     Source of Data: <a href="https://data.cdc.gov/browse?category=500+Cities+%26+Places&q=2025&sortBy=relevance&tags=places&pageSize=20"> CDC 500 Cities & PLACES Data Portal </a>.
                 </p>
+                                <p class="caption">
+                    Visual design inspired by <a href="https://observablehq.com/@d3/choropleth/2"> Chloropleth visualization on Observable/d3 </a>.
+                </p>
                 <p class="caption">
                 Counties without data are shown in <b>gray</b>.
                 </p>
@@ -128,13 +131,14 @@
 
         <div id="viz-block-story" class="story-hidden">
         <div class="sub-container story-chapter">
-            <h2>Small signals, big patterns</h2>
+            <h2>Small signals, big patterns: who is most affected by depression?</h2>
             <p class="subheader">
-                This section presents a structured analysis approach: initial demographic comparison, risk assessment calculation, followed by population-level examination. The analysis focuses on depression symptom burden using PHQ-based scoring methodology from NHANES data, providing quantitative insights into mental health patterns.
+                This analysis focuses on depression symptom burden using <b>PHQ-based scoring methodology</b> from the 2021-2023 <a href="https://wwwn.cdc.gov/nchs/nhanes/">CDC NHANES</a> (National Health and Nutrition Examination Survey) dataset, providing quantitative insights into mental health patterns. 
+                <b>Higher scores indicate higher depression severity</b>, with <b>5, 10, 15, and 20</b> representing cutoffs for <b>mild, moderate, moderately severe, and severe depression</b>. Learn more about the NHANES <a href="https://www.hiv.uw.edu/page/mental-health-screening/phq-9">here</a>.
             </p>
             <div class="story-beat story-beat-intro">
                 <p class="caption">
-                    This analysis examines gender-based differences in depression screening outcomes from the NHANES dataset. The study focuses on respondents who completed identical depression assessment items, investigating whether demographic patterns emerge when controlling for other variables. The research question addresses whether systematic differences exist between population groups despite similar screening protocols.
+                    <i>This analysis examines group-based differences in depression screening outcomes from the NHANES dataset. The study focuses on respondents who completed identical depression assessment items, investigating whether demographic patterns emerge when controlling for other variables. The research question addresses whether systematic differences exist between population groups despite similar screening protocols.</i>
                 </p>
             </div>
             <div id="story-vis"></div>
@@ -144,40 +148,80 @@
         </div>
         <div id="story-bridge" class="container story-after-viz story-hidden" aria-live="polite">
             <p>
-                Following the demographic analysis, the investigation expands to examine age-related patterns. The next analysis segment evaluates how depression burden varies across different life stages within the same NHANES dataset, providing insights into age-stratified mental health outcomes.
+                As the demographic analysis shows, <b>women on average have higher depression scores than men</b>. Now, let's examine <b>age-related</b> patterns. How depression burden varies across different life stages within the same NHANES dataset?.
             </p>
-            <button type="button" id="story-continue-age" class="story-continue-btn">Continue to age group analysis</button>
+            <button type="button" id="story-continue-age" class="story-continue-btn">CONTINUE TO AGE GROUP ANALYSIS</button>
         </div>
         <div id="story-age-section" class="story-age-section story-hidden sub-container">
-            <div id="story-age-vis"></div>
+            <div id="story-age-vis">
+                <h2>Younger age groups have higher PH1-9 depression scores.</h2>
+            </div>
             <p class="caption">
                 Weighted Analysis: Nationally representative mean PHQ-9 depression scores by age group, using NHANES MEC exam sample weights. Age groups span 10-year intervals (18–29, 30–39, 40–49, 50–59, 60–69, 70+). Population estimates derived from sum of survey weights.
             </p>
         </div>
         <div id="story-bmi-bridge" class="container story-after-viz story-hidden" aria-live="polite">
             <p>
-                Age tells part of the story, but lifestyle factors may also play a role. The next analysis examines whether Body Mass Index — a proxy for metabolic health — correlates with depression burden, and whether that relationship is linear or more complex.
+                Age tells part of the story, but <b>lifestyle factors</b> may also play a role. The next analysis examines whether <b>Body Mass Index (BMI) </b> — a proxy for metabolic health — correlates with depression burden, and whether that relationship is linear or more complex.
             </p>
-            <button type="button" id="story-continue-bmi" class="story-continue-btn">Continue to BMI analysis</button>
+            <button type="button" id="story-continue-bmi" class="story-continue-btn">CONTINUE TO BMI ANALYSIS</button>
         </div>
         <div id="story-bmi-section" class="story-age-section story-hidden sub-container">
-            <div id="story-bmi-vis"></div>
+            <div id="story-bmi-vis">
+                <h2>Depression burden is highest in underweight populations.</h2>
+            </div>
+            <div class="caption-div">
             <p class="caption">
                 Weighted Analysis: Nationally representative mean PHQ-9 depression scores by BMI category, using NHANES MEC exam sample weights. BMI categories follow standard clinical definitions in kg/m^2 (Underweight &lt;18.5, Healthy 18.5–24.9, Overweight 25–29.9, Obesity ≥30).
             </p>
+            </div>
         </div>
         <div id="story-sleep-bridge" class="container story-after-viz story-hidden" aria-live="polite">
             <p>
-                BMI captures metabolic health, but another powerful lifestyle factor is sleep. The next analysis examines how weekday sleep duration relates to depression burden — and whether the data confirms the expected U-shaped curve.
+                BMI captures metabolic health, but another powerful lifestyle factor is <b>sleep</b>. The next analysis examines how <b>weekday sleep duration</b> relates to depression burden — and whether the data confirms the expected U-shaped curve.
             </p>
-            <button type="button" id="story-continue-sleep" class="story-continue-btn">Continue to sleep analysis</button>
+            <button type="button" id="story-continue-sleep" class="story-continue-btn">CONTINUE TO SLEEP ANALYSIS</button>
         </div>
         <div id="story-sleep-section" class="story-age-section story-hidden sub-container">
-            <div id="story-sleep-vis"></div>
+            <div id="story-sleep-vis">
+                <h2>Higher depression rates are correlated with abnormal sleeping habits.</h2>
+            </div>
             <p class="caption">
                 Weighted Analysis: Nationally representative mean PHQ-9 depression scores by weekday sleep duration, using NHANES MEC exam sample weights. Extreme values (&lt;2h or &gt;14h) excluded as likely data errors.
             </p>
         </div>
+
+        <div id="story-conclusion-bridge" class="container story-after-viz story-hidden" aria-live="polite">
+
+    <p>
+        As we can see, <b>sleep patterns, BMI, age, and gender</b> all show measurable relationships
+        with depression burden. While more rigorous analysis is needed to decipher whether this is <b>correlation or causation</b>, 
+        it is clear that </b>who</b> is affected by mental health issues is related to <b>both</b> demographic and lifestyle factors.
+    </p>
+
+    <button type="button"
+            id="story-show-conclusion"
+            class="story-continue-btn">
+        VIEW FINAL CONCLUSION
+    </button>
+</div>
+
+<div id="story-conclusion-section" class="story-hidden">
+    <h2>The Mental Health Lifestyle: Final Thoughts</h2>
+    <p class="subheader">
+        Using <b>Reddit activity</b>, <b>national depression prevalence</b>, and <b>NHANES PHQ-based
+        analysis</b>, we explored the mental health crisis in the United States: 
+        as the mental health burden has become more visible and
+        widespread over the past few decades, links to geographic location, lifestyle, and 
+        demographic factors have emerged. 
+        Although these visualizations <b>cannot establish causation</b>, they highlight
+        <b>clear patterns that can guide public health research and
+        mental health intervention efforts in the future</b>.
+    </p>
+    <p>
+        <i>To learn more about our development process, check out the <a href="https://github.com/theotherm4r3/CMSC471-FinalProject">README.md</a> on our GitHub Repo!</i>
+    </p>
+</div>
 
         </div>
 
