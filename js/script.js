@@ -97,9 +97,11 @@ let nhanesStoryRowsPromise = null;
 
 const NHANES_AGE_BANDS = [
     { label: "18–29", lo: 18, hi: 30 },
-    { label: "30–44", lo: 30, hi: 45 },
-    { label: "45–59", lo: 45, hi: 60 },
-    { label: "60–80", lo: 60, hi: 81 },
+    { label: "30–39", lo: 30, hi: 40 },
+    { label: "40–49", lo: 40, hi: 50 },
+    { label: "50–59", lo: 50, hi: 60 },
+    { label: "60–69", lo: 60, hi: 70 },
+    { label: "70+",   lo: 70, hi: Infinity },
 ];
 
 function nhanesAgeBand(ageYears) {
@@ -120,15 +122,21 @@ function loadNhanesForStory() {
     }
     nhanesStoryRowsPromise = d3.csv("./data/combined_NHANES.csv", d => {
         const g = d.Gender === "" || d.Gender == null ? NaN : +d.Gender;
-        const risk = d.depression_risk_number === "" || d.depression_risk_number == null
+        const risk = d.depression_risk === "" || d.depression_risk == null
             ? NaN
-            : +d.depression_risk_number;
+            : +d.depression_risk;
         const ageYears = d.Age_in_years_at_screening === "" || d.Age_in_years_at_screening == null
             ? NaN
             : +d.Age_in_years_at_screening;
-        return { gender: g, ageYears, depressionRisk: risk };
+        const phq9 = d.phq9_total === "" || d.phq9_total == null ? NaN : +d.phq9_total;
+        const weight = d.Full_sample_2_year_MEC_exam_weight === "" || d.Full_sample_2_year_MEC_exam_weight == null
+            ? NaN
+            : +d.Full_sample_2_year_MEC_exam_weight;
+        const bmi = d.Body_Mass_Index_kg_m_2 === "" || d.Body_Mass_Index_kg_m_2 == null ? NaN : +d.Body_Mass_Index_kg_m_2;
+        const sleep = d.Sleep_hours_weekdays_or_workdays === "" || d.Sleep_hours_weekdays_or_workdays == null ? NaN : +d.Sleep_hours_weekdays_or_workdays;
+        return { gender: g, ageYears, depressionRisk: risk, phq9_total: phq9, Full_sample_2_year_MEC_exam_weight: weight, bmi, sleep };
     }).then(rows => rows.filter(r =>
-        Number.isFinite(r.depressionRisk) && Number.isFinite(r.ageYears) && r.ageYears >= 18
+        Number.isFinite(r.ageYears) && r.ageYears >= 18
     ));
     return nhanesStoryRowsPromise;
 }
@@ -1298,419 +1306,658 @@ const redditsvg = d3.select('#reddit-vis')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
 function createDepressionGenderVis() {
-    const sW = 1200;
-    const sH = 520;
-    const storyMargin = { top: 48, right: 48, bottom: 92, left: 48 };
-    const innerW = sW - storyMargin.left - storyMargin.right;
-    const innerH = sH - storyMargin.top - storyMargin.bottom;
+    const svgW = 900, svgH = 500;
+    const m = { top: 60, right: 40, bottom: 90, left: 70 };
+    const innerW = svgW - m.left - m.right;
+    const innerH = svgH - m.top - m.bottom;
 
-    const womenColor = "#4e79a7";
-    const menColor = "#59a14f";
-    const colW = innerW / 2;
-    const leftCx = colW * 0.5;
-    const rightCx = colW * 1.5;
-    const barW = 80;
-    const barRegionTop = 142;
-    const baseline = innerH - 54;
-    const barMaxPx = baseline - barRegionTop - 26;
-    const nLabelYOffset = 44;
+    const womenColor = "#7b5ea7";
+    const menColor   = "#3a7abf";
 
-    const svg = d3.select("#story-vis")
-        .append("svg")
-        .attr("width", sW)
-        .attr("height", sH)
-        .attr("viewBox", `0 0 ${sW} ${sH}`)
-        .attr("role", "img")
-        .attr("aria-label", "Depression risk by gender comparison");
-
-    const root = svg.append("g")
-        .attr("transform", `translate(${storyMargin.left},${storyMargin.top})`);
-
-    root.append("text")
-        .attr("x", innerW / 2)
-        .attr("y", -14)
-        .attr("text-anchor", "middle")
-        .style("font-size", "26px")
-        .style("font-weight", "600")
-        .style("fill", "#2a2a7b")
-        .text("Gender Comparison: Depression Burden by Demographic Group");
-
-    root.append("text")
-        .attr("x", innerW / 2)
-        .attr("y", 14)
-        .attr("text-anchor", "middle")
-        .style("font-size", "17px")
-        .style("fill", "#444")
-        .text("Average PHQ-style item score (depression risk number) in the NHANES extract — calculate to reveal population averages");
-
-    function drawFigure(parent, cx, label, fill) {
-        const fg = parent.append("g").attr("transform", `translate(${cx},${barRegionTop - 118})`);
-        fg.append("circle")
-            .attr("r", 34)
-            .attr("cy", 40)
-            .attr("fill", fill)
-            .attr("opacity", 0.9);
-        fg.append("circle").attr("cx", -11).attr("cy", 34).attr("r", 3.5).attr("fill", "#fff");
-        fg.append("circle").attr("cx", 11).attr("cy", 34).attr("r", 3.5).attr("fill", "#fff");
-        fg.append("path")
-            .attr("d", "M -14 52 Q 0 60 14 52")
-            .attr("fill", "none")
-            .attr("stroke", "#fff")
-            .attr("stroke-width", 2)
-            .attr("stroke-linecap", "round");
-        fg.append("text")
-            .attr("y", 104)
-            .attr("text-anchor", "middle")
-            .style("font-size", "18px")
-            .style("font-weight", "600")
-            .style("fill", "#222")
-            .text(label);
-        return fg;
-    }
-
-    drawFigure(root, leftCx, "Female Respondents", womenColor);
-    drawFigure(root, rightCx, "Male Respondents", menColor);
-
-    const promptG = root.append("g").attr("class", "story-risk-prompt");
-    promptG.append("text")
-        .attr("x", innerW / 2)
-        .attr("y", barRegionTop + 30)
-        .attr("text-anchor", "middle")
-        .style("font-size", "38px")
-        .style("fill", "#666")
-        .text("?");
-
-    promptG.append("text")
-        .attr("x", innerW / 2)
-        .attr("y", barRegionTop + 64)
-        .attr("text-anchor", "middle")
-        .style("font-size", "17px")
-        .style("fill", "#555")
-        .text("Which demographic group demonstrates higher average depression risk?");
-
-    const barsG = root.append("g")
-        .attr("class", "story-risk-bars")
-        .style("opacity", 0);
-
-    const noteG = root.append("g")
-        .attr("class", "story-risk-note")
-        .style("opacity", 0);
+    const barW      = 110;
+    const barMaxPx  = innerH;
+    const leftCx    = innerW * 0.32;
+    const rightCx   = innerW * 0.68;
+    const baseline  = innerH;
+    const nLabelYOffset = 28;
 
     const fmt = d3.format(".2f");
 
-    const compareBtn = d3.select("#story-vis")
-        .append("button")
-        .attr("type", "button")
-        .attr("class", "story-compare-btn")
-        .text("Calculate depression risk");
+    const svg = d3.select("#story-vis")
+        .append("svg")
+        .attr("width", svgW)
+        .attr("height", svgH)
+        .attr("viewBox", `0 0 ${svgW} ${svgH}`);
 
-    compareBtn.on("click", function () {
-        const btn = d3.select(this);
-        if (btn.attr("data-done") === "1") {
-            return;
-        }
+    const g = svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
 
-        loadNhanesForStory().then(rows => {
-            const genderRows = rows.filter(r => (r.Gender === 1.0 || r.Gender === 2.0) && r.Full_sample_2_year_MEC_exam_weight > 0);
+    // Fixed PHQ-9 y-axis: 0–27
+    const yScale = d3.scaleLinear().domain([0, 27]).range([baseline, 0]);
 
-            const byG = d3.rollup(genderRows, v => {
-                const totalWeightedScore = d3.sum(v, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
-                const totalWeights = d3.sum(v, r => r.Full_sample_2_year_MEC_exam_weight);
-                return {
-                    mean: totalWeights > 0 ? totalWeightedScore / totalWeights : 0,
-                    n: v.length,
-                    popEstimate: totalWeights
-                };
-            }, r => r.Gender);
-            console.log("Map Keys:", Array.from(byG.keys()));
-            console.log("Map Data:", byG);
+    // Y-axis
+    const yAxis = g.append("g")
+        .call(d3.axisLeft(yScale).ticks(9).tickSize(-innerW))
+        .attr("class", "gender-y-axis");
+    yAxis.selectAll(".tick line")
+        .attr("stroke", "#ccc")
+        .attr("stroke-dasharray", "3,3");
+    yAxis.select(".domain").remove();
+    yAxis.selectAll("text")
+        .style("font-size", "14px")
+        .style("fill", "#555");
 
-            const women = byG.get(2) || byG.get("2") || { mean: 0, n: 0, popEstimate: 0 };
-            const men = byG.get(1) || byG.get("1") || { mean: 0, n: 0, popEstimate: 0 };
-            const yMax = Math.max(3, women.mean, men.mean) * 1.08;
+    // Y-axis label
+    g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerH / 2)
+        .attr("y", -52)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("fill", "#555")
+        .text("Weighted Mean PHQ-9 Score (0–27)");
 
-            const yScale = d3.scaleLinear()
-                .domain([0, yMax])
-                .range([baseline, baseline - barMaxPx]);
+    // Baseline
+    g.append("line")
+        .attr("x1", 0).attr("x2", innerW)
+        .attr("y1", baseline).attr("y2", baseline)
+        .attr("stroke", "#333").attr("stroke-width", 1.5);
 
-            const data = [
-                { key: "women", label: "Women", cx: leftCx, mean: women.mean, n: women.n, pop: women.popEstimate, color: womenColor },
-                { key: "men", label: "Men", cx: rightCx, mean: men.mean, n: men.n, pop: men.popEstimate, color: menColor }
-            ];
+    // Gender labels (static)
+    const labelData = [
+        { label: "Women", cx: leftCx,  color: womenColor },
+        { label: "Men",   cx: rightCx, color: menColor   }
+    ];
+    g.selectAll("text.gender-label")
+        .data(labelData)
+        .join("text")
+        .attr("class", "gender-label")
+        .attr("x", d => d.cx)
+        .attr("y", baseline + 58)
+        .attr("text-anchor", "middle")
+        .style("font-size", "18px")
+        .style("font-weight", "700")
+        .style("fill", d => d.color)
+        .text(d => d.label);
 
-            barsG.selectAll("*").remove();
+    // Chart title
+    g.append("text")
+        .attr("x", innerW / 2)
+        .attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px")
+        .style("font-weight", "700")
+        .style("fill", "#1a1a1a")
+        .text("Nationally Representative Average PHQ-9 Score by Gender");
 
-            barsG.selectAll("rect.risk-bar")
-                .data(data)
-                .join("rect")
-                .attr("class", "risk-bar")
-                .attr("x", d => d.cx - barW / 2)
-                .attr("width", barW)
-                .attr("y", baseline)
-                .attr("height", 0)
-                .attr("rx", 6)
-                .attr("fill", d => d.color)
-                .attr("opacity", 0.88)
-                .transition()
-                .duration(900)
-                .ease(d3.easeCubicOut)
-                .attr("y", d => yScale(d.mean))
-                .attr("height", d => baseline - yScale(d.mean));
+    const barsG = g.append("g").attr("class", "bars-group");
 
-            barsG.selectAll("text.risk-value")
-                .data(data)
-                .join("text")
-                .attr("class", "risk-value")
-                .attr("x", d => d.cx)
-                .attr("y", baseline)
-                .attr("text-anchor", "middle")
-                .style("font-size", "21px")
-                .style("font-weight", "700")
-                .style("fill", "#1a1a1a")
-                .text(d => fmt(d.mean))
-                .transition()
-                .delay(400)
-                .duration(500)
-                .attr("y", d => yScale(d.mean) - 10);
+    loadNhanesForStory().then(rows => {
+        // Filter: valid gender, valid phq9, valid weight
+        const genderRows = rows.filter(r =>
+            (r.gender === 1 || r.gender === 2) &&
+            Number.isFinite(r.phq9_total) &&
+            Number.isFinite(r.Full_sample_2_year_MEC_exam_weight) &&
+            r.Full_sample_2_year_MEC_exam_weight > 0
+        );
 
-            barsG.selectAll("text.risk-n")
-                .data(data)
-                .join("text")
-                .attr("class", "risk-n")
-                .attr("x", d => d.cx)
-                .attr("y", baseline + nLabelYOffset)
-                .attr("text-anchor", "middle")
-                .style("font-size", "14px")
-                .style("fill", "#666")
-                .text(d => `n = ${d3.format(",")(d.n)} (Represents ~${d3.format(".2s")(d.pop)} people)`);
+        const byG = d3.rollup(genderRows, v => {
+            const totalWeightedScore = d3.sum(v, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
+            const totalWeights       = d3.sum(v, r => r.Full_sample_2_year_MEC_exam_weight);
+            return {
+                mean:        totalWeights > 0 ? totalWeightedScore / totalWeights : 0,
+                n:           v.length,
+                popEstimate: totalWeights
+            };
+        }, r => r.gender);
 
-            barsG.append("line")
-                .attr("x1", 0)
-                .attr("x2", innerW)
-                .attr("y1", baseline)
-                .attr("y2", baseline)
-                .attr("stroke", "#333")
-                .attr("stroke-width", 1);
+        const women = byG.get(2) ?? { mean: 0, n: 0, popEstimate: 0 };
+        const men   = byG.get(1) ?? { mean: 0, n: 0, popEstimate: 0 };
 
-            noteG.selectAll("*").remove();
-            const ratio = women.mean > 0 ? men.mean / women.mean : NaN;
-            const ratioTxt = Number.isFinite(ratio)
-                ? `Men’s mean is ${fmt(ratio)}× women’s in this sample (overall average ≈ ${fmt((women.mean + men.mean) / 2)}).`
-                : "";
+        const minVal = Math.min(women.mean, men.mean);
+        const maxVal = Math.max(women.mean, men.mean);
+        const pad    = (maxVal - minVal) * 1.5;
+        const yMin   = Math.max(0, minVal - pad);
+        const yMax   = maxVal + pad;
+        yScale.domain([yMin, yMax]);
 
-            const footLines = [
-                "Higher bars mean more frequent / severe symptoms on average across answered PHQ items — same reading as a “risk” tick upward in narrative viz.",
-                ratioTxt || "The gap can be subtle; the next story beat widens the lens (like the population zoom in Pain, Pills, and Prison Time)."
-            ];
-            const foot = noteG.append("text")
-                .attr("x", innerW / 2)
-                .attr("y", innerH + 8)
-                .attr("text-anchor", "middle")
-                .style("font-size", "16px")
-                .style("fill", "#333");
-            footLines.forEach((line, i) => {
-                foot.append("tspan")
-                    .attr("x", innerW / 2)
-                    .attr("dy", i === 0 ? 0 : 22)
-                    .text(line);
-            });
+        // Redraw y-axis with updated domain
+        g.select(".gender-y-axis")
+            .call(d3.axisLeft(yScale).ticks(5).tickSize(-innerW))
+            .selectAll(".tick line").attr("stroke", "#ccc").attr("stroke-dasharray", "3,3");
+        g.select(".gender-y-axis .domain").remove();
+        g.select(".gender-y-axis").selectAll("text").style("font-size", "14px").style("fill", "#555");
 
-            promptG.transition().duration(400).style("opacity", 0)
-                .on("end", () => promptG.style("display", "none"));
+        const data = [
+            { key: "women", label: "Women", cx: leftCx,  mean: women.mean, n: women.n, pop: women.popEstimate, color: womenColor },
+            { key: "men",   label: "Men",   cx: rightCx, mean: men.mean,   n: men.n,   pop: men.popEstimate,   color: menColor   }
+        ];
 
-            barsG.transition().duration(500).style("opacity", 1);
-            noteG.transition().delay(300).duration(500).style("opacity", 1);
+        barsG.selectAll("*").remove();
 
-            btn.attr("data-done", "1").text("Averages shown").attr("disabled", true);
+        // Bars
+        barsG.selectAll("rect.risk-bar")
+            .data(data)
+            .join("rect")
+            .attr("class", "risk-bar")
+            .attr("x", d => d.cx - barW / 2)
+            .attr("width", barW)
+            .attr("y", baseline)
+            .attr("height", 0)
+            .attr("rx", 6)
+            .attr("fill", d => d.color)
+            .attr("opacity", 0.88)
+            .transition().duration(800).ease(d3.easeCubicOut)
+            .delay((_, i) => i * 80)
+            .attr("y", d => yScale(d.mean))
+            .attr("height", d => baseline - yScale(d.mean));
 
-            const bridgeEl = document.getElementById("story-bridge");
-            if (bridgeEl) {
-                d3.select(bridgeEl).classed("story-hidden", false);
-                bridgeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            }
-        });
+        // Value labels (animated up with bars)
+        barsG.selectAll("text.risk-value")
+            .data(data)
+            .join("text")
+            .attr("class", "risk-value")
+            .attr("x", d => d.cx)
+            .attr("y", baseline)
+            .attr("text-anchor", "middle")
+            .style("font-size", "21px")
+            .style("font-weight", "700")
+            .style("fill", "#1a1a1a")
+            .text(d => fmt(d.mean))
+            .transition().delay((_, i) => i * 150 + 400).duration(400)
+            .attr("y", d => yScale(d.mean) - 10);
+
+        // n / population labels
+        barsG.selectAll("text.risk-n")
+            .data(data)
+            .join("text")
+            .attr("class", "risk-n")
+            .attr("x", d => d.cx)
+            .attr("y", baseline + nLabelYOffset)
+            .attr("text-anchor", "middle")
+            .style("font-size", "13px")
+            .style("fill", "#666")
+            .text(d => `n = ${d3.format(",")(d.n)} (~${d3.format(".2s")(d.pop)} people)`);
+
+        // Reveal bridge after animation
+        setTimeout(() => {
+            const bridge = document.getElementById("story-bridge");
+            if (bridge) bridge.classList.remove("story-hidden");
+        }, 1500);
     });
 }
 
 function setupDepressionStoryContinue() {
-    d3.select("#story-continue-age").on("click", function () {
-        const btn = d3.select(this);
-        if (btn.attr("data-done") === "1") {
-            return;
-        }
+    const btn = document.getElementById("story-continue-age");
+    const ageSection = document.getElementById("story-age-section");
+    if (!btn || !ageSection) return;
+
+    btn.addEventListener("click", () => {
+        ageSection.classList.remove("story-hidden");
         createDepressionAgeVis();
-        const ageSec = document.getElementById("story-age-section");
-        d3.select(ageSec).classed("story-hidden", false);
-        d3.select("#story-bridge").classed("story-hidden", true);
-        btn.attr("data-done", "1").attr("disabled", true).text("Age chart shown");
-        ageSec?.scrollIntoView({ behavior: "smooth", block: "start" });
+        ageSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTimeout(() => {
+            const bmiBridge = document.getElementById("story-bmi-bridge");
+            if (bmiBridge) bmiBridge.classList.remove("story-hidden");
+        }, 1200);
     });
+
+    const bmiBtn = document.getElementById("story-continue-bmi");
+    const bmiSection = document.getElementById("story-bmi-section");
+    if (bmiBtn && bmiSection) {
+        bmiBtn.addEventListener("click", () => {
+            bmiSection.classList.remove("story-hidden");
+            createDepressionBmiVis();
+            bmiSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            setTimeout(() => {
+                const sleepBridge = document.getElementById("story-sleep-bridge");
+                if (sleepBridge) sleepBridge.classList.remove("story-hidden");
+            }, 1200);
+        });
+    }
+
+    const sleepBtn = document.getElementById("story-continue-sleep");
+    const sleepSection = document.getElementById("story-sleep-section");
+    if (sleepBtn && sleepSection) {
+        sleepBtn.addEventListener("click", () => {
+            sleepSection.classList.remove("story-hidden");
+            createDepressionSleepVis();
+            sleepSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    }
 }
 
 function createDepressionAgeVis() {
-    if (!d3.select("#story-age-vis").select("svg").empty()) {
-        return;
-    }
-    const sW = 1200;
-    const sH = 420;
-    const visMargin = { top: 36, right: 40, bottom: 96, left: 64 };
-    const innerW = sW - visMargin.left - visMargin.right;
-    const innerH = sH - visMargin.top - visMargin.bottom;
+    const container = document.getElementById("story-age-vis");
+    if (!container || container.querySelector("svg")) return; // only render once
 
-    const barColor = d3.scaleOrdinal()
-        .domain(NHANES_AGE_BANDS.map(b => b.label))
-        .range(["#4e79a7", "#76b7b2", "#59a14f", "#edc949"]);
+    const svgW = 900, svgH = 500;
+    const m = { top: 60, right: 40, bottom: 80, left: 70 };
+    const innerW = svgW - m.left - m.right;
+    const innerH = svgH - m.top - m.bottom;
+
+    const bands = NHANES_AGE_BANDS.map(b => b.label);
 
     const svg = d3.select("#story-age-vis")
         .append("svg")
-        .attr("width", sW)
-        .attr("height", sH)
-        .attr("viewBox", `0 0 ${sW} ${sH}`)
-        .attr("role", "img")
-        .attr("aria-label", "Mean depression risk by age group");
+        .attr("width", svgW)
+        .attr("height", svgH)
+        .attr("viewBox", `0 0 ${svgW} ${svgH}`);
 
-    const root = svg.append("g")
-        .attr("transform", `translate(${visMargin.left},${visMargin.top})`);
+    const g = svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
 
-    root.append("text")
+    const xScale = d3.scaleBand()
+        .domain(bands)
+        .range([0, innerW])
+        .padding(0.35);
+
+    // Placeholder y-scale; domain set after data loads
+    const yScale = d3.scaleLinear().range([innerH, 0]);
+
+    // X-axis
+    const xAxisG = g.append("g")
+        .attr("transform", `translate(0,${innerH})`)
+        .call(d3.axisBottom(xScale).tickSizeOuter(0));
+    xAxisG.selectAll(".domain, .tick line").attr("stroke", "#444");
+    xAxisG.selectAll("text").style("font-size", "15px").style("fill", "#333");
+
+    g.append("text")
         .attr("x", innerW / 2)
-        .attr("y", -10)
+        .attr("y", innerH + 58)
         .attr("text-anchor", "middle")
-        .style("font-size", "22px")
-        .style("font-weight", "600")
-        .style("fill", "#2a2a7b")
-        .text("Age-Stratified Analysis: Depression Symptoms by Age Group");
+        .style("font-size", "14px").style("fill", "#555")
+        .text("Age Group");
 
-    root.append("text")
-        .attr("x", innerW / 2)
-        .attr("y", 16)
+    // Y-axis group (redrawn after data)
+    const yAxisG = g.append("g").attr("class", "age-y-axis");
+
+    g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerH / 2).attr("y", -52)
         .attr("text-anchor", "middle")
-        .style("font-size", "15px")
-        .style("fill", "#444")
-        .text("Age at screening (years); same depression risk number as demographic comparison — now analyzed by life stage");
+        .style("font-size", "14px").style("fill", "#555")
+        .text("Weighted Mean PHQ-9 Score");
 
-    const chart = root.append("g")
-        .attr("transform", "translate(0, 36)");
+    // Chart title
+    g.append("text")
+        .attr("x", innerW / 2).attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px").style("font-weight", "700").style("fill", "#1a1a1a")
+        .text("Depression Burden by Age Group (Nationally Representative)");
 
-    const chartInnerH = innerH - 36;
+    // Baseline
+    g.append("line").attr("class", "age-baseline")
+        .attr("x1", 0).attr("x2", innerW)
+        .attr("y1", innerH).attr("y2", innerH)
+        .attr("stroke", "#333").attr("stroke-width", 1.5);
+
+    const barsG = g.append("g");
+
+    // Color scale: darker purple for younger, fading to blue for older
+    const colorScale = d3.scaleSequential()
+        .domain([0, bands.length - 1])
+        .interpolator(d3.interpolateRgb("#7b5ea7", "#3a7abf"));
 
     loadNhanesForStory().then(rows => {
-        const banded = rows
-            .map(r => ({ ...r, band: nhanesAgeBand(r.ageYears) }))
-            .filter(r => r.band != null);
+        const valid = rows.filter(r =>
+            Number.isFinite(r.phq9_total) &&
+            Number.isFinite(r.Full_sample_2_year_MEC_exam_weight) &&
+            r.Full_sample_2_year_MEC_exam_weight > 0 &&
+            Number.isFinite(r.ageYears)
+        );
 
-        const byBand = d3.rollup(banded, v => ({
-            mean: d3.mean(v, r => r.depressionRisk),
-            n: v.length
-        }), r => r.band);
+        const byBand = d3.rollup(valid, v => {
+            const tw = d3.sum(v, r => r.Full_sample_2_year_MEC_exam_weight);
+            const ws = d3.sum(v, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
+            return { mean: tw > 0 ? ws / tw : 0, n: v.length, pop: tw };
+        }, r => nhanesAgeBand(r.ageYears));
 
-        const data = NHANES_AGE_BANDS.map(b => {
-            const s = byBand.get(b.label);
-            return {
-                label: b.label,
-                mean: s?.mean ?? 0,
-                n: s?.n ?? 0
-            };
-        }).filter(d => d.n > 0);
+        const data = NHANES_AGE_BANDS.map((b, i) => {
+            const d = byBand.get(b.label) ?? { mean: 0, n: 0, pop: 0 };
+            return { label: b.label, mean: d.mean, n: d.n, pop: d.pop, color: colorScale(i) };
+        });
 
-        if (!data.length) {
-            chart.append("text")
-                .attr("x", innerW / 2)
-                .attr("y", chartInnerH / 2)
-                .attr("text-anchor", "middle")
-                .style("font-size", "16px")
-                .style("fill", "#666")
-                .text("No rows with age and depression score.");
-            return;
-        }
+        // Dynamic y domain with padding
+        const minVal = d3.min(data, d => d.mean);
+        const maxVal = d3.max(data, d => d.mean);
+        const pad = (maxVal - minVal) * 1.2;
+        yScale.domain([Math.max(0, minVal - pad), maxVal + pad]);
 
-        const fmt = d3.format(".2f");
-        const yMax = Math.max(3, d3.max(data, d => d.mean) ?? 0) * 1.08;
+        // Draw y-axis
+        yAxisG.call(d3.axisLeft(yScale).ticks(5).tickSize(-innerW));
+        yAxisG.selectAll(".tick line").attr("stroke", "#ccc").attr("stroke-dasharray", "3,3");
+        yAxisG.select(".domain").remove();
+        yAxisG.selectAll("text").style("font-size", "14px").style("fill", "#555");
 
-        const x = d3.scaleBand()
-            .domain(data.map(d => d.label))
-            .range([0, innerW])
-            .padding(0.3);
-
-        const y = d3.scaleLinear()
-            .domain([0, yMax])
-            .nice()
-            .range([chartInnerH, 0]);
-
-        chart.append("line")
-            .attr("x1", 0)
-            .attr("x2", innerW)
-            .attr("y1", chartInnerH)
-            .attr("y2", chartInnerH)
-            .attr("stroke", "#333")
-            .attr("stroke-width", 1);
-
-        chart.selectAll("rect.age-bar")
+        // Bars
+        barsG.selectAll("rect.age-bar")
             .data(data)
             .join("rect")
             .attr("class", "age-bar")
-            .attr("x", d => x(d.label) ?? 0)
-            .attr("width", x.bandwidth())
-            .attr("y", chartInnerH)
+            .attr("x", d => xScale(d.label))
+            .attr("width", xScale.bandwidth())
+            .attr("y", innerH)
             .attr("height", 0)
-            .attr("rx", 6)
-            .attr("fill", d => barColor(d.label))
-            .attr("opacity", 0.9);
+            .attr("rx", 5)
+            .attr("fill", d => d.color)
+            .attr("opacity", 0.88)
+            .transition().duration(800).ease(d3.easeCubicOut)
+            .delay((_, i) => i * 80)
+            .attr("y", d => yScale(d.mean))
+            .attr("height", d => innerH - yScale(d.mean));
 
-        chart.selectAll("rect.age-bar")
-            .transition()
-            .duration(850)
-            .ease(d3.easeCubicOut)
-            .attr("y", d => y(d.mean))
-            .attr("height", d => chartInnerH - y(d.mean));
-
-        chart.selectAll("text.age-mean")
+        // Value labels
+        barsG.selectAll("text.age-value")
             .data(data)
             .join("text")
-            .attr("class", "age-mean")
-            .attr("x", d => (x(d.label) ?? 0) + x.bandwidth() / 2)
-            .attr("y", chartInnerH)
+            .attr("class", "age-value")
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH)
             .attr("text-anchor", "middle")
-            .style("font-size", "18px")
-            .style("font-weight", "700")
-            .style("fill", "#1a1a1a")
-            .text(d => fmt(d.mean))
-            .transition()
-            .delay(350)
-            .duration(500)
-            .attr("y", d => y(d.mean) - 8);
+            .style("font-size", "16px").style("font-weight", "700").style("fill", "#1a1a1a")
+            .text(d => d3.format(".2f")(d.mean))
+            .transition().delay((_, i) => i * 80 + 400).duration(400)
+            .attr("y", d => yScale(d.mean) - 10);
 
-        chart.selectAll("text.age-n")
+        // n labels
+        barsG.selectAll("text.age-n")
             .data(data)
             .join("text")
             .attr("class", "age-n")
-            .attr("x", d => (x(d.label) ?? 0) + x.bandwidth() / 2)
-            .attr("y", chartInnerH + 34)
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH + 35)
             .attr("text-anchor", "middle")
-            .style("font-size", "14px")
-            .style("fill", "#444")
-            .text(d => `n = ${d3.format(",")(d.n)}`);
+            .style("font-size", "12px").style("fill", "#666")
+            .text(d => `n=${d3.format(",")(d.n)}`);
+    });
+}
 
-        const xAxis = d3.axisBottom(x).tickSizeOuter(0);
-        chart.append("g")
-            .attr("transform", `translate(0,${chartInnerH})`)
-            .call(xAxis)
-            .selectAll("text")
-            .style("font-size", "16px")
-            .style("fill", "#222");
+const BMI_CATEGORIES = [
+    { label: "Underweight", lo: 0,    hi: 18.5 },
+    { label: "Healthy",     lo: 18.5, hi: 25.0 },
+    { label: "Overweight",  lo: 25.0, hi: 30.0 },
+    { label: "Obesity",     lo: 30.0, hi: Infinity },
+];
 
-        chart.append("g")
-            .call(d3.axisLeft(y).ticks(6))
-            .selectAll("text")
-            .style("font-size", "16px");
+function createDepressionBmiVis() {
+    const container = document.getElementById("story-bmi-vis");
+    if (!container || container.querySelector("svg")) return;
 
-        chart.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("x", -chartInnerH / 2)
-            .attr("y", -44)
+    const svgW = 900, svgH = 500;
+    const m = { top: 60, right: 40, bottom: 90, left: 70 };
+    const innerW = svgW - m.left - m.right;
+    const innerH = svgH - m.top - m.bottom;
+
+    const labels = BMI_CATEGORIES.map(b => b.label);
+
+    const svg = d3.select("#story-bmi-vis")
+        .append("svg")
+        .attr("width", svgW)
+        .attr("height", svgH)
+        .attr("viewBox", `0 0 ${svgW} ${svgH}`);
+
+    const g = svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
+
+    const xScale = d3.scaleBand()
+        .domain(labels)
+        .range([0, innerW])
+        .padding(0.35);
+
+    const yScale = d3.scaleLinear().range([innerH, 0]);
+
+    // X-axis
+    const xAxisG = g.append("g")
+        .attr("transform", `translate(0,${innerH})`)
+        .call(d3.axisBottom(xScale).tickSizeOuter(0));
+    xAxisG.selectAll(".domain, .tick line").attr("stroke", "#444");
+    xAxisG.selectAll("text").style("font-size", "15px").style("fill", "#333");
+
+    g.append("text")
+        .attr("x", innerW / 2).attr("y", innerH + 58)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px").style("fill", "#555")
+        .text("BMI Category");
+
+    const yAxisG = g.append("g").attr("class", "bmi-y-axis");
+
+    g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerH / 2).attr("y", -52)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px").style("fill", "#555")
+        .text("Weighted Mean PHQ-9 Score");
+
+    g.append("text")
+        .attr("x", innerW / 2).attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px").style("font-weight", "700").style("fill", "#1a1a1a")
+        .text("Depression Burden by BMI Category (Nationally Representative)");
+
+    g.append("line")
+        .attr("x1", 0).attr("x2", innerW)
+        .attr("y1", innerH).attr("y2", innerH)
+        .attr("stroke", "#333").attr("stroke-width", 1.5);
+
+    const barsG = g.append("g");
+
+    loadNhanesForStory().then(rows => {
+        const valid = rows.filter(r =>
+            Number.isFinite(r.bmi) && r.bmi > 0 &&
+            Number.isFinite(r.phq9_total) &&
+            Number.isFinite(r.Full_sample_2_year_MEC_exam_weight) &&
+            r.Full_sample_2_year_MEC_exam_weight > 0
+        );
+
+        const data = BMI_CATEGORIES.map(b => {
+            const grp = valid.filter(r => r.bmi >= b.lo && r.bmi < b.hi);
+            const tw  = d3.sum(grp, r => r.Full_sample_2_year_MEC_exam_weight);
+            const ws  = d3.sum(grp, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
+            return { label: b.label, mean: tw > 0 ? ws / tw : 0, n: grp.length, pop: tw };
+        });
+
+        const minVal = d3.min(data, d => d.mean);
+        const maxVal = d3.max(data, d => d.mean);
+        const pad = (maxVal - minVal) * 1.2;
+        yScale.domain([Math.max(0, minVal - pad), maxVal + pad]);
+
+        yAxisG.call(d3.axisLeft(yScale).ticks(5).tickSize(-innerW));
+        yAxisG.selectAll(".tick line").attr("stroke", "#ccc").attr("stroke-dasharray", "3,3");
+        yAxisG.select(".domain").remove();
+        yAxisG.selectAll("text").style("font-size", "14px").style("fill", "#555");
+
+        const bmiColor = d3.scaleSequential()
+            .domain([0, BMI_CATEGORIES.length - 1])
+            .interpolator(d3.interpolateRgb("#7b5ea7", "#3a7abf"));
+
+        // Bars
+        barsG.selectAll("rect.bmi-bar")
+            .data(data)
+            .join("rect")
+            .attr("class", "bmi-bar")
+            .attr("x", d => xScale(d.label))
+            .attr("width", xScale.bandwidth())
+            .attr("y", innerH).attr("height", 0)
+            .attr("rx", 5)
+            .attr("fill", (d, i) => bmiColor(i))
+            .attr("opacity", 0.88)
+            .transition().duration(800).ease(d3.easeCubicOut)
+            .delay((_, i) => i * 100)
+            .attr("y", d => yScale(d.mean))
+            .attr("height", d => innerH - yScale(d.mean));
+
+        // Value labels
+        barsG.selectAll("text.bmi-value")
+            .data(data)
+            .join("text")
+            .attr("class", "bmi-value")
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH)
             .attr("text-anchor", "middle")
-            .style("font-size", "16px")
-            .style("fill", "#333")
-            .text("Mean depression risk #");
+            .style("font-size", "16px").style("font-weight", "700").style("fill", "#1a1a1a")
+            .text(d => d3.format(".2f")(d.mean))
+            .transition().delay((_, i) => i * 100 + 400).duration(400)
+            .attr("y", d => yScale(d.mean) - 10);
+
+        // n labels
+        barsG.selectAll("text.bmi-n")
+            .data(data)
+            .join("text")
+            .attr("class", "bmi-n")
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH + 35)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px").style("fill", "#666")
+            .text(d => `n=${d3.format(",")(d.n)}`);
+    });
+}
+
+const SLEEP_CATEGORIES = [
+    { label: "Very Short\n(<6h)",      lo: 2,  hi: 6  },
+    { label: "Short\n(6h)",            lo: 6,  hi: 7  },
+    { label: "Recommended\n(7–9h)",    lo: 7,  hi: 10 },
+    { label: "Long\n(>9h)",            lo: 10, hi: 15 },
+];
+
+function createDepressionSleepVis() {
+    const container = document.getElementById("story-sleep-vis");
+    if (!container || container.querySelector("svg")) return;
+
+    const svgW = 900, svgH = 520;
+    const m = { top: 60, right: 40, bottom: 100, left: 70 };
+    const innerW = svgW - m.left - m.right;
+    const innerH = svgH - m.top - m.bottom;
+
+    const labels = SLEEP_CATEGORIES.map(b => b.label);
+
+    const svg = d3.select("#story-sleep-vis")
+        .append("svg")
+        .attr("width", svgW)
+        .attr("height", svgH)
+        .attr("viewBox", `0 0 ${svgW} ${svgH}`);
+
+    const g = svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
+
+    const xScale = d3.scaleBand()
+        .domain(labels)
+        .range([0, innerW])
+        .padding(0.35);
+
+    const yScale = d3.scaleLinear().range([innerH, 0]);
+
+    // X-axis — split multi-line labels on \n
+    const xAxisG = g.append("g")
+        .attr("transform", `translate(0,${innerH})`)
+        .call(d3.axisBottom(xScale).tickSizeOuter(0));
+    xAxisG.selectAll(".domain, .tick line").attr("stroke", "#444");
+    xAxisG.selectAll(".tick text").remove(); // replace with wrapped text
+    xAxisG.selectAll(".tick").each(function(d) {
+        const parts = d.split("\n");
+        const tick = d3.select(this);
+        parts.forEach((line, i) => {
+            tick.append("text")
+                .attr("y", 20 + i * 18)
+                .attr("text-anchor", "middle")
+                .style("font-size", i === 0 ? "15px" : "13px")
+                .style("fill", "#333")
+                .style("font-weight", i === 0 ? "500" : "400")
+                .text(line);
+        });
+    });
+
+    g.append("text")
+        .attr("x", innerW / 2).attr("y", innerH + 78)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px").style("fill", "#555")
+        .text("Weekday Sleep Duration");
+
+    const yAxisG = g.append("g").attr("class", "sleep-y-axis");
+
+    g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerH / 2).attr("y", -52)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px").style("fill", "#555")
+        .text("Weighted Mean PHQ-9 Score");
+
+    g.append("text")
+        .attr("x", innerW / 2).attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px").style("font-weight", "700").style("fill", "#1a1a1a")
+        .text("Depression Burden by Sleep Duration (Nationally Representative)");
+
+    g.append("line")
+        .attr("x1", 0).attr("x2", innerW)
+        .attr("y1", innerH).attr("y2", innerH)
+        .attr("stroke", "#333").attr("stroke-width", 1.5);
+
+    const barsG = g.append("g");
+
+    loadNhanesForStory().then(rows => {
+        const valid = rows.filter(r =>
+            Number.isFinite(r.sleep) && r.sleep >= 2 && r.sleep <= 14 &&
+            Number.isFinite(r.phq9_total) &&
+            Number.isFinite(r.Full_sample_2_year_MEC_exam_weight) &&
+            r.Full_sample_2_year_MEC_exam_weight > 0
+        );
+
+        const data = SLEEP_CATEGORIES.map(b => {
+            const grp = valid.filter(r => r.sleep >= b.lo && r.sleep < b.hi);
+            const tw  = d3.sum(grp, r => r.Full_sample_2_year_MEC_exam_weight);
+            const ws  = d3.sum(grp, r => r.phq9_total * r.Full_sample_2_year_MEC_exam_weight);
+            return { label: b.label, color: b.color, mean: tw > 0 ? ws / tw : 0, n: grp.length };
+        });
+
+        const minVal = d3.min(data, d => d.mean);
+        const maxVal = d3.max(data, d => d.mean);
+        const pad = (maxVal - minVal) * 1.2;
+        yScale.domain([Math.max(0, minVal - pad), maxVal + pad]);
+
+        yAxisG.call(d3.axisLeft(yScale).ticks(5).tickSize(-innerW));
+        yAxisG.selectAll(".tick line").attr("stroke", "#ccc").attr("stroke-dasharray", "3,3");
+        yAxisG.select(".domain").remove();
+        yAxisG.selectAll("text").style("font-size", "14px").style("fill", "#555");
+
+        const sleepColor = d3.scaleSequential()
+            .domain([0, SLEEP_CATEGORIES.length - 1])
+            .interpolator(d3.interpolateRgb("#7b5ea7", "#3a7abf"));
+
+        // Bars
+        barsG.selectAll("rect.sleep-bar")
+            .data(data)
+            .join("rect")
+            .attr("class", "sleep-bar")
+            .attr("x", d => xScale(d.label))
+            .attr("width", xScale.bandwidth())
+            .attr("y", innerH).attr("height", 0)
+            .attr("rx", 5)
+            .attr("fill", (d, i) => sleepColor(i))
+            .attr("opacity", 0.88)
+            .transition().duration(800).ease(d3.easeCubicOut)
+            .delay((_, i) => i * 100)
+            .attr("y", d => yScale(d.mean))
+            .attr("height", d => innerH - yScale(d.mean));
+
+        // Value labels
+        barsG.selectAll("text.sleep-value")
+            .data(data)
+            .join("text")
+            .attr("class", "sleep-value")
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px").style("font-weight", "700").style("fill", "#1a1a1a")
+            .text(d => d3.format(".2f")(d.mean))
+            .transition().delay((_, i) => i * 100 + 400).duration(400)
+            .attr("y", d => yScale(d.mean) - 10);
+
+        // n labels
+        barsG.selectAll("text.sleep-n")
+            .data(data)
+            .join("text")
+            .attr("class", "sleep-n")
+            .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+            .attr("y", innerH + 51)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px").style("fill", "#666")
+            .text(d => `n=${d3.format(",")(d.n)}`);
     });
 }

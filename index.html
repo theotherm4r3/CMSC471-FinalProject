@@ -133,11 +133,11 @@
             </div>
             <div id="story-vis"></div>
             <p class="caption">
-                Demographic Analysis: Mean depression risk scores among respondents with valid assessments, stratified by self-reported gender. Analysis conducted on unweighted sample; results are not representative of national estimates.
+                Weighted Analysis: Nationally representative mean PHQ-9 depression scores by gender, using NHANES MEC exam sample weights. PHQ-9 scale ranges from 0 (no symptoms) to 27 (severe). Population estimates derived from sum of survey weights.
             </p>
         </div>
-        <div id="story-bridge" class="container story-bridge story-hidden" aria-live="polite">
-            <p class="story-narrative">
+        <div id="story-bridge" class="container story-after-viz story-hidden" aria-live="polite">
+            <p>
                 Following the demographic analysis, the investigation expands to examine age-related patterns. The next analysis segment evaluates how depression burden varies across different life stages within the same NHANES dataset, providing insights into age-stratified mental health outcomes.
             </p>
             <button type="button" id="story-continue-age" class="story-continue-btn">Continue to age group analysis</button>
@@ -145,7 +145,31 @@
         <div id="story-age-section" class="story-age-section story-hidden sub-container">
             <div id="story-age-vis"></div>
             <p class="caption">
-                Analysis of respondents aged 18+ with valid depression risk assessments, categorized into age bands (years). Utilizes identical scoring methodology as demographic comparison.
+                Weighted Analysis: Nationally representative mean PHQ-9 depression scores by age group, using NHANES MEC exam sample weights. Age groups span 10-year intervals (18–29, 30–39, 40–49, 50–59, 60–69, 70+). Population estimates derived from sum of survey weights.
+            </p>
+        </div>
+        <div id="story-bmi-bridge" class="container story-after-viz story-hidden" aria-live="polite">
+            <p>
+                Age tells part of the story, but lifestyle factors may also play a role. The next analysis examines whether Body Mass Index — a proxy for metabolic health — correlates with depression burden, and whether that relationship is linear or more complex.
+            </p>
+            <button type="button" id="story-continue-bmi" class="story-continue-btn">Continue to BMI analysis</button>
+        </div>
+        <div id="story-bmi-section" class="story-age-section story-hidden sub-container">
+            <div id="story-bmi-vis"></div>
+            <p class="caption">
+                Weighted Analysis: Nationally representative mean PHQ-9 depression scores by BMI category, using NHANES MEC exam sample weights. BMI categories follow standard clinical definitions in kg/m^2 (Underweight &lt;18.5, Healthy 18.5–24.9, Overweight 25–29.9, Obesity ≥30).
+            </p>
+        </div>
+        <div id="story-sleep-bridge" class="container story-after-viz story-hidden" aria-live="polite">
+            <p>
+                BMI captures metabolic health, but another powerful lifestyle factor is sleep. The next analysis examines how weekday sleep duration relates to depression burden — and whether the data confirms the expected U-shaped curve.
+            </p>
+            <button type="button" id="story-continue-sleep" class="story-continue-btn">Continue to sleep analysis</button>
+        </div>
+        <div id="story-sleep-section" class="story-age-section story-hidden sub-container">
+            <div id="story-sleep-vis"></div>
+            <p class="caption">
+                Weighted Analysis: Nationally representative mean PHQ-9 depression scores by weekday sleep duration, using NHANES MEC exam sample weights. Extreme values (&lt;2h or &gt;14h) excluded as likely data errors.
             </p>
         </div>
 

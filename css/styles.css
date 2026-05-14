@@ -106,9 +106,6 @@ h2{
 .story-bridge {
     margin: 2rem auto 1.5rem;
     padding: 1.25rem 1.5rem;
-    border: 1px solid var(--outline);
-    border-radius: 8px;
-    background: #f8fbff;
     max-width: 52rem;
 }
 
