@@ -284,6 +284,16 @@ function setupVizRevealFlow() {
         storyWrap.classList.remove("story-hidden");
         storyWrap.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+
+    const revealGenderBtn = document.getElementById("reveal-gender-vis");
+    const genderSection = document.getElementById("story-gender-section");
+    if (revealGenderBtn && genderSection) {
+        revealGenderBtn.addEventListener("click", () => {
+            genderSection.classList.remove("story-hidden");
+            createDepressionGenderVis();
+            genderSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    }
 }
 
 //load data after page is loaded
@@ -381,7 +391,6 @@ function init(){
         setupSection2ScrollReveal()
     });
 
-    createDepressionGenderVis();
     setupDepressionStoryContinue();
 }
 
@@ -1367,6 +1376,8 @@ const redditsvg = d3.select('#reddit-vis')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
 function createDepressionGenderVis() {
+    const container = document.getElementById("story-vis");
+    if (!container || container.querySelector("svg")) return;
     const svgW = 900, svgH = 500;
     const m = { top: 60, right: 40, bottom: 90, left: 70 };
     const innerW = svgW - m.left - m.right;
