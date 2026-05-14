@@ -168,11 +168,11 @@ const mainSubColor = d3.scaleOrdinal()
 const r_ctrl_colors = d3.scaleOrdinal()
     .domain(r_ctrl_subs)
     .range([
-        "#5296dd",
-        "#92bddf",
-        "	#ffffff",
-        "	#afafaf",
-        "#ff6314"
+        "#a8a8a8",
+        "#7b7b7b",
+        "#c8a36a",
+        "#9cb6c8",
+        "#cc6f4a"
     ])
 
 const subredditColor = subreddit => r_main_subs.includes(subreddit)
@@ -682,13 +682,17 @@ function createRedVis() {
                 label: series.label,
                 color: r_ctrl_colors(series.sub),
                 values: toQuarterlyPostValues(series.values),
-                strokeWidth: 3
+                strokeWidth: 2,
+                opacity: 0.55,
+                isMentalHealth: false
             })),
             {
                 label: "Selected mental-health subreddits",
-                color: "#2a2a7b",
+                color: "#3f7fca",
                 values: toQuarterlyPostValues(combinedMentalDaily),
-                strokeWidth: 5
+                strokeWidth: 4.5,
+                opacity: 1,
+                isMentalHealth: true
             }
         ];
 
@@ -727,15 +731,42 @@ function createRedVis() {
             .x(d => x(d.date))
             .y(d => y(d.posts));
 
+        const area = d3.area()
+            .defined(d => Number.isFinite(d.posts))
+            .x(d => x(d.date))
+            .y0(comparisonHeight)
+            .y1(d => y(d.posts));
+
+        chart.append("g")
+            .attr("class", "reddit-grid")
+            .call(d3.axisLeft(y)
+                .ticks(6)
+                .tickSize(-comparisonWidth)
+                .tickFormat(""))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll(".tick line")
+                .attr("stroke", "#eeeeee")
+                .attr("stroke-width", 1));
+
+        const mentalHealthSeries = comparisonSeries.find(series => series.isMentalHealth);
+        if (mentalHealthSeries) {
+            chart.append("path")
+                .datum(mentalHealthSeries.values)
+                .attr("class", "mental-health-area")
+                .attr("fill", "#3f7fca")
+                .attr("fill-opacity", 0.18)
+                .attr("d", area);
+        }
+
        const yAxisGroup = chart.append("g")
         .call(d3.axisLeft(y).ticks(6));
 
         yAxisGroup.selectAll("text")
-            .style("font-size", "16px")
-            .style("fill", "#333");
+            .style("font-size", "13px")
+            .style("fill", "#666");
 
         yAxisGroup.selectAll(".domain, .tick line")
-            .attr("stroke", "#444");
+            .attr("stroke", "#d9d9d9");
 
         chart.append("text")
             .attr("x", (-panelHeight / 2) + 10)
@@ -746,7 +777,7 @@ function createRedVis() {
             .attr("transform", "rotate(-90)")
             .attr("text-anchor", "middle")
             .style("font-size", "16px")
-            .style("fill", "#555")
+            .style("fill", "#666")
             .style("font-weight", "600")
             .text("Posts per quarter");
 
@@ -760,6 +791,9 @@ function createRedVis() {
             .attr("fill", "none")
             .attr("stroke", d => d.color)
             .attr("stroke-width", d => d.strokeWidth)
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("opacity", d => d.opacity)
             .attr("d", d => line(d.values));
 
         seriesGroups.selectAll(".comparison-hover-point")
@@ -821,18 +855,31 @@ function createRedVis() {
             .attr("x", d => x(d.value.date) + 8)
             .attr("y", d => d.labelY)
             .attr("fill", d => d.color)
-            .style("font-size", "16px")
-            .style("font-weight", "700")
-            .text(d => d.label);
+            .style("font-size", d => d.isMentalHealth ? "15px" : "13px")
+            .style("font-weight", d => d.isMentalHealth ? "700" : "500")
+            .each(function(d) {
+                const text = d3.select(this);
+                if (!d.isMentalHealth) {
+                    text.text(d.label);
+                    return;
+                }
+
+                ["Selected mental-health", "subreddits"].forEach((line, index) => {
+                    text.append("tspan")
+                        .attr("x", x(d.value.date) + 8)
+                        .attr("dy", index === 0 ? 0 : "1.15em")
+                        .text(line);
+                });
+            });
 
         const xAxisG = chart.append("g")
             .attr("class", "reddit-x-axis")
             .attr("transform", `translate(0,${comparisonHeight})`)
-            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")).tickSizeOuter(6));
-        xAxisG.selectAll(".domain, .tick line").attr("stroke", "#444");
+            .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")).tickSizeOuter(0));
+        xAxisG.selectAll(".domain, .tick line").attr("stroke", "#d9d9d9");
         xAxisG.selectAll("text")
-            .style("font-size", "16px")
-            .attr("fill", "#333")
+            .style("font-size", "13px")
+            .attr("fill", "#666")
             .attr("transform", "rotate(-45)")
             .attr("text-anchor", "end");
         chart.append("text")
@@ -851,7 +898,7 @@ function createRedVis() {
             .style("font-size", "25px")
             .style("font-weight", "700")
             .style("fill", "#333")
-            .text("Total Subreddit Posts Per Quarter, 2011-2025")
+            .text("")
     };
 
     const getYearRange = year => {
@@ -867,7 +914,7 @@ function createRedVis() {
     };
 
     const drawActivityChart = ({ group, title, metric, selectedYear, setYear, xOffset }) => {
-        
+
         const chartMargin = { top: 10, right: 10, bottom: 60, left: 70 };
 
         const chartWidth = panelWidth - chartMargin.left - chartMargin.right;
@@ -905,7 +952,7 @@ function createRedVis() {
             .style("font-size", "25px")
             .style("font-weight", "700")
             .style("fill", "#333")
-            .text(selectedYear == null ? "Total Mental Health-Related Subreddit Posts Per Quarter" : `${title} (${selectedYear})`);
+            .text(selectedYear == null ? "": `${title} (${selectedYear})`);
 
         chart.append("rect")
             .attr("x", 0)
@@ -919,15 +966,26 @@ function createRedVis() {
                 createRedVis();
             });
 
+        chart.append("g")
+            .attr("class", "reddit-grid")
+            .call(d3.axisLeft(y)
+                .ticks(6)
+                .tickSize(-chartWidth)
+                .tickFormat(""))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll(".tick line")
+                .attr("stroke", "#eeeeee")
+                .attr("stroke-width", 1));
+
         const yAxisGroup = chart.append("g")
             .call(d3.axisLeft(y).ticks(6));
 
         yAxisGroup.selectAll("text")
-            .style("font-size", "16px")
-            .style("fill", "#333");
+            .style("font-size", "13px")
+            .style("fill", "#666");
 
         yAxisGroup.selectAll(".domain, .tick line")
-            .attr("stroke", "#444");
+            .attr("stroke", "#d9d9d9");
 
         chart.append("text")
             .attr("x", (-chartHeight / 2))
@@ -950,6 +1008,9 @@ function createRedVis() {
             .attr("fill", "none")
             .attr("stroke", d => subredditColor(d.sub))
             .attr("stroke-width", d => subredditStrokeWidth(d.sub))
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("opacity", d => r_main_subs.includes(d.sub) ? 0.96 : 0.72)
             .attr("d", d => line(d.values));
 
         trendlines.selectAll(".trendline-hover-point")
@@ -1028,8 +1089,8 @@ function createRedVis() {
             .attr("class", "reddit-x-axis")
             .attr("transform", `translate(0,${chartHeight})`)
             .call(xAxis);
-        xAxisGroup.selectAll(".domain, .tick line").attr("stroke", "#444");
-        xAxisGroup.selectAll("text").attr("fill", "#333");
+        xAxisGroup.selectAll(".domain, .tick line").attr("stroke", "#d9d9d9");
+        xAxisGroup.selectAll("text").attr("fill", "#666");
 
         if (selectedYear == null) {
             xAxisGroup.selectAll(".tick")
@@ -1061,7 +1122,7 @@ function createRedVis() {
                     hideTooltip();
                     createRedVis();
                 });
-            xAxisGroup.selectAll("text").style("font-size", "16px");
+            xAxisGroup.selectAll("text").style("font-size", "13px");
         }
 
         chart.append("text")
@@ -1169,20 +1230,20 @@ function createRedVis() {
                 .tickSize(-contributionWidth)
                 .tickFormat(""))
             .selectAll("line")
-            .attr("stroke", "#ffffff")
-            .attr("stroke-width", 1.2);
+            .attr("stroke", "#eeeeee")
+            .attr("stroke-width", 1);
 
         chart.select(".contribution-grid .domain").remove();
 
         const yAxisGroup = chart.append("g")
-    .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")));
+            .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")));
 
-yAxisGroup.selectAll("text")
-    .style("font-size", "16px")
-    .style("fill", "#333");
+        yAxisGroup.selectAll("text")
+            .style("font-size", "13px")
+            .style("fill", "#666");
 
-yAxisGroup.selectAll(".domain, .tick line")
-    .attr("stroke", "#444");
+        yAxisGroup.selectAll(".domain, .tick line")
+            .attr("stroke", "#d9d9d9");
 
         const quarters = chart.selectAll(".quarter-contribution-bar")
             .data(contributionRows)
@@ -1218,10 +1279,10 @@ yAxisGroup.selectAll(".domain, .tick line")
             .attr("class", "reddit-x-axis")
             .attr("transform", `translate(0,${contributionHeight})`)
             .call(d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")).tickSizeOuter(6));
-        contribXAxis.selectAll(".domain, .tick line").attr("stroke", "#444");
+        contribXAxis.selectAll(".domain, .tick line").attr("stroke", "#d9d9d9");
         contribXAxis.selectAll("text")
-            .style("font-size", "16px")
-            .attr("fill", "#333")
+            .style("font-size", "13px")
+            .attr("fill", "#666")
             .attr("transform", "rotate(-45)")
             .attr("text-anchor", "end");
         chart.append("text")

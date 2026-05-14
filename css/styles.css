@@ -5,6 +5,11 @@
   --text-dark: #333333;
   --text-light: #fffefe;
   --outline: #dddddf;
+  --nyt-ink: #222222;
+  --nyt-muted: #666666;
+  --nyt-rule: #d9d9d9;
+  --nyt-grid: #eeeeee;
+  --reddit-blue: #3f7fca;
 }
 
 /* Reset default styles */
@@ -52,10 +57,12 @@ p {
     position: absolute; /* So we can move it with the cursor */
     padding: 10px;
     background: white;
-    border: 1px solid #929292;
+    border: 1px solid #b8b8b8;
     border-radius: 2px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
     pointer-events: none; /* Prevent tooltip from interfering with mouse events */
     font-size: 12px;
+    line-height: 1.45;
 }
 
 /* our styles */
@@ -215,14 +222,17 @@ svg {
 
 #section2-stage {
     max-width: 1200px;
-    height: 700px;
+    height: 748px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: minmax(0, 4fr) minmax(190px, 1fr);
     gap: 28px;
     overflow: visible;
-    padding: 0;
-    background: transparent;
+    padding: 24px;
+    border: 1px solid #8bb8e8;
+    border-radius: 7px;
+    background: var(--secondary-color);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
 .section2-title-section {
@@ -234,10 +244,10 @@ svg {
     position: relative;
     height: 700px;
     padding: 24px;
-    border: 1px solid #8bb8e8;
-    border-radius: 7px;
-    background: #eef6ff;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(139, 184, 232, 0.75);
+    border-radius: 1px;
+    background: #ffffff;
+    box-shadow: none;
 }
 
 .section2-scene {
@@ -262,9 +272,11 @@ svg {
     flex-direction: column;
     gap: 16px;
     padding: 18px;
-    border-radius: 7px;
-    background-color: var(--secondary-color);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(139, 184, 232, 0.75);
+    border-left: 3px solid var(--reddit-blue);
+    border-radius: 1px;
+    background-color: #ffffff;
+    box-shadow: none;
 }
 
 #section2-progress {
@@ -276,7 +288,7 @@ svg {
     width: 100%;
     height: 7px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.78);
+    background: #eeeeee;
     overflow: hidden;
 }
 
@@ -286,7 +298,7 @@ svg {
     width: 0%;
     height: 100%;
     border-radius: inherit;
-    background: var(--primary-color);
+    background: var(--reddit-blue);
     transition: width 180ms ease;
 }
 
@@ -329,24 +341,37 @@ svg {
 
 #section2-desc-title {
     margin: 0;
-    color: var(--text-dark);
+    color: var(--nyt-ink);
     font-size: 18px;
     line-height: 1.25;
 }
 
 #section2-desc-body {
     margin: 0;
-    color: var(--text-dark);
+    color: var(--nyt-muted);
     font-size: 14px;
     line-height: 1.5;
 }
 
 .section2-desc-emphasis {
     margin: 0;
-    color: var(--text-dark);
+    color: var(--nyt-ink);
     font-size: 14px;
     line-height: 1.5;
     font-weight: 700;
+}
+
+#viz-block-reddit svg {
+    background-color: #ffffff;
+    border-radius: 0;
+}
+
+#viz-block-reddit .domain {
+    stroke: var(--nyt-rule);
+}
+
+#viz-block-reddit .tick line {
+    stroke: var(--nyt-rule);
 }
 
 @media (max-width: 900px) {
@@ -383,4 +408,13 @@ svg {
 
 .caption{
     font-size: 15px;
+}
+
+.reddit-citations .caption {
+    max-width: 100%;
+}
+
+.reddit-citations a,
+.reddit-citations a:visited {
+    color: #551a8b;
 }
