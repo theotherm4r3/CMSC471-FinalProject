@@ -2029,7 +2029,7 @@ function createDepressionSleepVis() {
             .join("text")
             .attr("class", "sleep-n")
             .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
-            .attr("y", innerH + 51)
+            .attr("y", innerH + 55)
             .attr("text-anchor", "middle")
             .style("font-size", "12px").style("fill", "#666")
             .text(d => `n=${d3.format(",")(d.n)}`);
