@@ -421,3 +421,7 @@ svg {
     max-width: 100%;
     border: none;
 }
+
+.small-text p{
+    font-size: 17px;
+}
